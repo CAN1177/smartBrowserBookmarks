@@ -1,0 +1,2 @@
+# smartBrowserBookmarks
+smartBrowserBookmarks
