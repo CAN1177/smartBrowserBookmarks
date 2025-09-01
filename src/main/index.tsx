@@ -128,8 +128,8 @@ const SortableFolderCard: React.FC<{
           bodyStyle={{ padding: "8px 16px" }}
         >
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {/* 显示子文件夹 */}
-            {folder.childFolders.slice(0, 3).map((subFolder) => (
+            {/* 显示所有子文件夹 */}
+            {folder.childFolders.map((subFolder) => (
               <div
                 key={subFolder.id}
                 className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200"
@@ -142,68 +142,62 @@ const SortableFolderCard: React.FC<{
                   </div>
                   <div className="text-xs text-blue-600">
                     {subFolder.children.length} 个书签
+                    {subFolder.childFolders.length > 0 && (
+                      <span className="ml-1">+ {subFolder.childFolders.length} 个子文件夹</span>
+                    )}
                   </div>
                 </div>
                 <span className="text-xs text-blue-500">文件夹</span>
               </div>
             ))}
 
-            {/* 显示书签 */}
-            {folder.children
-              .slice(0, 6 - folder.childFolders.length)
-              .map((bookmark) => (
-                <div
-                  key={bookmark.id}
-                  className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded"
-                >
-                  <img
-                    src={bookmark.favicon}
-                    alt="favicon"
-                    className="w-4 h-4 flex-shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/assets/default-favicon.png";
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="text-sm text-gray-900 truncate cursor-pointer hover:text-blue-600"
-                      onClick={() => window.open(bookmark.url, "_blank")}
-                    >
-                      {bookmark.title}
-                    </div>
-                    {bookmark.tags.length > 0 && (
-                      <div className="flex gap-1 mt-1">
-                        {bookmark.tags.slice(0, 2).map((tag) => (
-                          <Tag key={tag} color="blue">
-                            {tag}
-                          </Tag>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <Popconfirm
-                    title="确定删除这个书签吗？"
-                    onConfirm={() => onBookmarkDelete(bookmark.id)}
-                    okText="删除"
-                    cancelText="取消"
+            {/* 显示所有书签 */}
+            {folder.children.map((bookmark) => (
+              <div
+                key={bookmark.id}
+                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded group"
+              >
+                <img
+                  src={bookmark.favicon}
+                  alt="favicon"
+                  className="w-4 h-4 flex-shrink-0"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src =
+                      "/assets/default-favicon.png";
+                  }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="text-sm text-gray-900 truncate cursor-pointer hover:text-blue-600"
+                    onClick={() => window.open(bookmark.url, "_blank")}
                   >
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<DeleteOutlined />}
-                      className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100"
-                    />
-                  </Popconfirm>
+                    {bookmark.title}
+                  </div>
+                  {bookmark.tags.length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {bookmark.tags.map((tag) => (
+                         <Tag key={tag} color="blue">
+                           {tag}
+                         </Tag>
+                       ))}
+                    </div>
+                  )}
                 </div>
-              ))}
-
-            {folder.children.length + folder.childFolders.length > 6 && (
-              <div className="text-center text-gray-500 text-sm py-2">
-                还有 {folder.children.length + folder.childFolders.length - 6}{" "}
-                个项目...
+                <Popconfirm
+                  title="确定删除这个书签吗？"
+                  onConfirm={() => onBookmarkDelete(bookmark.id)}
+                  okText="删除"
+                  cancelText="取消"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100"
+                  />
+                </Popconfirm>
               </div>
-            )}
+            ))}
           </div>
         </Card>
       </div>
@@ -211,19 +205,19 @@ const SortableFolderCard: React.FC<{
   } else {
     // 简洁视图
     return (
-      <div ref={setNodeRef} style={style} className="mb-3">
+      <div ref={setNodeRef} style={style} className="mb-4">
         <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 border border-gray-100">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
               <div
-                className="flex items-center gap-3 cursor-pointer group"
+                className="flex items-center gap-4 cursor-pointer group"
                 onClick={() => onFolderClick(folder)}
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                  <FolderOutlined className="text-white text-lg" />
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <FolderOutlined className="text-white text-xl" />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                  <div className="font-semibold text-lg text-gray-800 group-hover:text-blue-600 transition-colors">
                     {folder.title}
                   </div>
                   <div className="text-sm text-gray-500">
@@ -260,18 +254,47 @@ const SortableFolderCard: React.FC<{
               </Space>
             </div>
 
-            {/* 显示前几个书签预览 */}
+            {/* 显示所有子文件夹 */}
+            {folder.childFolders.length > 0 && (
+              <div className="space-y-2 mb-4">
+                <div className="text-sm font-medium text-gray-600 mb-2">子文件夹</div>
+                {folder.childFolders.map((subFolder) => (
+                  <div
+                    key={subFolder.id}
+                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                    onClick={() => onFolderClick(subFolder)}
+                  >
+                    <FolderOutlined className="text-blue-600 text-lg" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-blue-800 font-medium hover:text-blue-600">
+                        {subFolder.title}
+                      </div>
+                      <div className="text-xs text-blue-600">
+                        {subFolder.children.length} 个书签
+                        {subFolder.childFolders.length > 0 && (
+                          <span className="ml-1">+ {subFolder.childFolders.length} 个子文件夹</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs text-blue-500 bg-blue-200 px-2 py-1 rounded">文件夹</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 显示所有书签预览 */}
             {folder.children.length > 0 && (
               <div className="space-y-2">
-                {folder.children.slice(0, 3).map((bookmark) => (
+                <div className="text-sm font-medium text-gray-600 mb-2">书签</div>
+                {folder.children.map((bookmark) => (
                   <div
                     key={bookmark.id}
-                    className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
                   >
                     <img
                       src={bookmark.favicon}
                       alt="favicon"
-                      className="w-4 h-4 flex-shrink-0"
+                      className="w-5 h-5 flex-shrink-0"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src =
                           "/assets/default-favicon.png";
@@ -279,19 +302,36 @@ const SortableFolderCard: React.FC<{
                     />
                     <div className="flex-1 min-w-0">
                       <div
-                        className="text-sm text-gray-700 truncate cursor-pointer hover:text-blue-600"
+                        className="text-sm text-gray-700 truncate cursor-pointer hover:text-blue-600 font-medium"
                         onClick={() => window.open(bookmark.url, "_blank")}
                       >
                         {bookmark.title}
                       </div>
+                      {bookmark.tags.length > 0 && (
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {bookmark.tags.map((tag) => (
+                             <Tag key={tag} color="blue">
+                               {tag}
+                             </Tag>
+                           ))}
+                        </div>
+                      )}
                     </div>
+                    <Popconfirm
+                      title="确定删除这个书签吗？"
+                      onConfirm={() => onBookmarkDelete(bookmark.id)}
+                      okText="删除"
+                      cancelText="取消"
+                    >
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100"
+                      />
+                    </Popconfirm>
                   </div>
                 ))}
-                {folder.children.length > 3 && (
-                  <div className="text-center text-xs text-gray-400 py-1">
-                    还有 {folder.children.length - 3} 个书签...
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -547,12 +587,75 @@ const MainPage: React.FC = () => {
               });
             } else if (grandChild.children) {
               // 这是一个子文件夹，递归处理
-              const subFolder = buildFolderStructure({
-                children: [grandChild],
-              } as any)[0];
-              if (subFolder) {
-                subFolders.push(subFolder);
-              }
+              const subFolderBookmarks: BookmarkItem[] = [];
+              const subFolderChildren: FolderItem[] = [];
+              
+              grandChild.children.forEach((greatGrandChild) => {
+                if (greatGrandChild.url) {
+                  // 这是一个书签
+                  const { title, keywords } = parseBookmarkTitle(greatGrandChild.title);
+                  subFolderBookmarks.push({
+                    id: greatGrandChild.id,
+                    url: greatGrandChild.url,
+                    title: title,
+                    favicon: `https://www.google.com/s2/favicons?domain=${
+                      new URL(greatGrandChild.url).hostname
+                    }`,
+                    tags: keywords,
+                    category: grandChild.title,
+                    parentId: grandChild.id,
+                    dateAdded: greatGrandChild.dateAdded,
+                  });
+                } else if (greatGrandChild.children) {
+                  // 递归处理更深层的文件夹
+                  const deeperSubFolderBookmarks: BookmarkItem[] = [];
+                  const deeperSubFolderChildren: FolderItem[] = [];
+                  
+                  greatGrandChild.children.forEach((deepChild) => {
+                    if (deepChild.url) {
+                      const { title, keywords } = parseBookmarkTitle(deepChild.title);
+                      deeperSubFolderBookmarks.push({
+                        id: deepChild.id,
+                        url: deepChild.url,
+                        title: title,
+                        favicon: `https://www.google.com/s2/favicons?domain=${
+                          new URL(deepChild.url).hostname
+                        }`,
+                        tags: keywords,
+                        category: greatGrandChild.title,
+                        parentId: greatGrandChild.id,
+                        dateAdded: deepChild.dateAdded,
+                      });
+                    } else if (deepChild.children) {
+                      // 对于更深层的嵌套，使用递归
+                      const evenDeeperFolders = buildFolderStructure({
+                        children: [deepChild],
+                      } as any);
+                      deeperSubFolderChildren.push(...evenDeeperFolders);
+                    }
+                  });
+                  
+                  subFolderChildren.push({
+                    id: greatGrandChild.id,
+                    title: greatGrandChild.title,
+                    parentId: grandChild.id,
+                    children: deeperSubFolderBookmarks,
+                    childFolders: deeperSubFolderChildren,
+                    dateAdded: greatGrandChild.dateAdded,
+                    order: greatGrandChild.index || 0,
+                  });
+                }
+              });
+              
+              subFolders.push({
+                id: grandChild.id,
+                title: grandChild.title,
+                parentId: child.id,
+                children: subFolderBookmarks,
+                childFolders: subFolderChildren,
+                dateAdded: grandChild.dateAdded,
+                order: grandChild.index || 0,
+              });
             }
           });
 
@@ -698,8 +801,8 @@ const MainPage: React.FC = () => {
 
   return (
     <Layout className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Header className="bg-white/90 backdrop-blur-sm shadow-sm">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+      <Header className="bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between w-full">
           <div className="flex items-center space-x-4">
             <GlobalOutlined className="text-2xl text-blue-600" />
             <h1 className="text-xl font-bold text-gray-800 m-0">
@@ -827,8 +930,8 @@ const MainPage: React.FC = () => {
                   <div
                     className={
                       isCardView
-                        ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                        : "space-y-2"
+                        ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                        : "grid grid-cols-1 lg:grid-cols-2 gap-4"
                     }
                   >
                     {getFilteredFolders().map((folder) => (
