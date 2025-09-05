@@ -17,7 +17,6 @@ import {
 import {
   SearchOutlined,
   PlusOutlined,
-  ImportOutlined,
   SettingOutlined,
   FolderOutlined,
   LinkOutlined,
@@ -217,9 +216,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleImportBookmarks = () => {
-    message.info("导入功能开发中...");
-  };
+  // const handleImportBookmarks = () => {
+  //   message.info("导入功能开发中...");
+  // };
 
   const handleTreeSelect = (_selectedKeys: React.Key[], info: any) => {
     const node = info.node;
@@ -455,14 +454,14 @@ const App: React.FC = () => {
             >
               主界面
             </Button>
-            <Button
+            {/* <Button
               type="text"
               icon={<ImportOutlined />}
               onClick={handleImportBookmarks}
               size="small"
             >
               导入
-            </Button>
+            </Button> */}
             <Button type="text" icon={<SettingOutlined />} size="small">
               设置
             </Button>

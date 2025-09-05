@@ -9,8 +9,6 @@ import {
   Space,
   Popconfirm,
   message,
-  Empty,
-  Tooltip,
 } from "antd";
 import {
   DeleteOutlined,
@@ -19,8 +17,6 @@ import {
   GlobalOutlined,
   DragOutlined,
   FolderOutlined,
-  AppstoreOutlined,
-  BarsOutlined,
 } from "@ant-design/icons";
 import {
   DndContext,
@@ -66,11 +62,19 @@ interface FolderItem {
 // 可拖拽的文件夹卡片组件
 const SortableFolderCard: React.FC<{
   folder: FolderItem;
-  isCardView: boolean;
   onDelete: (id: string) => void;
   onBookmarkDelete: (id: string) => void;
   onFolderClick: (folder: FolderItem) => void;
-}> = ({ folder, isCardView, onDelete, onBookmarkDelete, onFolderClick }) => {
+  searchQuery?: string;
+  highlightText?: (text: string, query: string) => React.ReactNode;
+}> = ({
+  folder,
+  onDelete,
+  onBookmarkDelete,
+  onFolderClick,
+  searchQuery,
+  highlightText,
+}) => {
   const {
     attributes,
     listeners,
@@ -86,327 +90,176 @@ const SortableFolderCard: React.FC<{
     opacity: isDragging ? 0.5 : 1,
   };
 
-  if (isCardView) {
-    return (
-      <div ref={setNodeRef} style={style} className="mb-6">
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 border border-white/60 overflow-hidden group hover:border-blue-200/50">
-          {/* 卡片头部 */}
-          <div className="bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/40 p-6 border-b border-gray-100/50 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5"></div>
-            <div className="relative flex items-center justify-between">
-              <div
-                className="flex items-center gap-5 cursor-pointer group"
-                onClick={() => onFolderClick(folder)}
-              >
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                  <FolderOutlined className="text-2xl text-white drop-shadow-sm" />
+  // 只使用列表视图
+  return (
+    <div ref={setNodeRef} style={style} className="mb-6">
+      <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 border border-white/60 overflow-hidden group hover:border-blue-200/50">
+        <div className="p-6 bg-gradient-to-br from-blue-50/30 to-indigo-50/20">
+          <div className="flex items-center justify-between mb-6">
+            <div
+              className="flex items-center gap-5 cursor-pointer group"
+              onClick={() => onFolderClick(folder)}
+            >
+              <div className="w-18 h-18 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
+                <FolderOutlined className="text-white text-3xl drop-shadow-sm" />
+              </div>
+              <div>
+                <div className="font-bold text-2xl text-gray-800 group-hover:text-blue-600 transition-colors mb-2">
+                  {folder.title}
                 </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300 mb-2">
-                    {folder.title}
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-gray-200/50 shadow-sm">
-                      📄 {folder.children.length} 个书签
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-gray-200/50 shadow-sm">
+                    📄 {folder.children.length} 个书签
+                  </span>
+                  {folder.childFolders.length > 0 && (
+                    <span className="text-sm text-blue-600 bg-blue-100/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-blue-200/50 shadow-sm">
+                      📁 + {folder.childFolders.length} 个子文件夹
                     </span>
-                  </div>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div
-                  {...attributes}
-                  {...listeners}
-                  className="cursor-move p-3 hover:bg-white/80 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:shadow-lg border border-gray-200/50"
-                >
-                  <DragOutlined className="text-gray-500 text-lg" />
-                </div>
-                <Popconfirm
-                  title="确定删除这个文件夹吗？"
-                  onConfirm={() => onDelete(folder.id)}
-                  okText="删除"
-                  cancelText="取消"
-                >
-                  <Button
-                    type="text"
-                    size="large"
-                    icon={<DeleteOutlined />}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50/80 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:shadow-lg border border-red-200/50"
-                  />
-                </Popconfirm>
+            </div>
+            <div className="flex items-center gap-3">
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-move p-3 hover:bg-white/80 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:shadow-lg border border-gray-200/50"
+              >
+                <DragOutlined className="text-gray-500 text-lg" />
               </div>
+              <Popconfirm
+                title="确定删除这个文件夹吗？"
+                onConfirm={() => onDelete(folder.id)}
+                okText="删除"
+                cancelText="取消"
+              >
+                <Button
+                  type="text"
+                  size="large"
+                  icon={<DeleteOutlined />}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50/80 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:shadow-lg border border-red-200/50"
+                />
+              </Popconfirm>
             </div>
           </div>
 
-          {/* 卡片内容 */}
-          <div className="p-6 bg-gradient-to-b from-white/50 to-gray-50/30">
-            <div className="space-y-4 max-h-72 overflow-y-auto custom-scrollbar">
-              {/* 显示所有子文件夹 */}
-              {folder.childFolders.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-3">
-                    <div className="w-2 h-6 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-sm"></div>
-                    <span className="bg-blue-100/60 px-3 py-1 rounded-full text-blue-700">
-                      📁 子文件夹
-                    </span>
-                  </h4>
-                  <div className="grid grid-cols-1 gap-2">
-                    {folder.childFolders.map((subFolder) => (
-                      <div
-                        key={subFolder.id}
-                        className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50/80 to-indigo-50/60 rounded-2xl border border-blue-200/40 hover:border-blue-300/60 hover:shadow-lg transition-all duration-300 cursor-pointer group backdrop-blur-sm"
-                        onClick={() => onFolderClick(subFolder)}
-                      >
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
-                          <FolderOutlined className="text-white text-lg" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm text-blue-800 font-semibold group-hover:text-blue-600 transition-colors mb-1">
-                            {subFolder.title}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-blue-600">
-                            <span className="bg-white/60 px-2 py-1 rounded-lg">
-                              📄 {subFolder.children.length} 个书签
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-xs text-blue-500 bg-blue-100/80 px-3 py-1 rounded-full border border-blue-200/50">
-                          文件夹
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 显示所有书签 */}
-              {folder.children.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-3">
-                    <div className="w-2 h-6 bg-gradient-to-b from-green-500 via-emerald-500 to-teal-500 rounded-full shadow-sm"></div>
-                    <span className="bg-green-100/60 px-3 py-1 rounded-full text-green-700">
-                      📄 书签
-                    </span>
-                  </h4>
-                  <div className="grid grid-cols-1 gap-2">
-                    {folder.children.map((bookmark) => (
-                      <div
-                        key={bookmark.id}
-                        className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50/80 to-white/60 rounded-2xl hover:from-gray-100/80 hover:to-white/80 hover:shadow-lg transition-all duration-300 group border border-gray-200/40 hover:border-gray-300/60 backdrop-blur-sm"
-                      >
-                        <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-md border border-gray-200/60 group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
-                          <img
-                            src={bookmark.favicon}
-                            alt="favicon"
-                            className="w-6 h-6 rounded-lg"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "/assets/default-favicon.png";
-                            }}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div
-                            className="text-sm text-gray-800 font-medium truncate cursor-pointer hover:text-blue-600 transition-colors mb-1"
-                            onClick={() => window.open(bookmark.url, "_blank")}
-                          >
-                            {bookmark.title}
-                          </div>
-                          {bookmark.tags.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {bookmark.tags.slice(0, 3).map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-1 bg-blue-100/80 text-blue-700 text-xs rounded-lg border border-blue-200/50"
-                                >
-                                  #{tag}
-                                </span>
-                              ))}
-                              {bookmark.tags.length > 3 && (
-                                <span className="px-2 py-1 bg-gray-100/80 text-gray-600 text-xs rounded-lg border border-gray-200/50">
-                                  +{bookmark.tags.length - 3}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <Popconfirm
-                          title="确定删除这个书签吗？"
-                          onConfirm={() => onBookmarkDelete(bookmark.id)}
-                          okText="删除"
-                          cancelText="取消"
-                        >
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50/80 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 border border-red-200/50"
-                          />
-                        </Popconfirm>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  } else {
-    // 简洁视图
-    return (
-      <div ref={setNodeRef} style={style} className="mb-6">
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 border border-white/60 overflow-hidden group hover:border-blue-200/50">
-          <div className="p-6 bg-gradient-to-br from-blue-50/30 to-indigo-50/20">
-            <div className="flex items-center justify-between mb-6">
-              <div
-                className="flex items-center gap-5 cursor-pointer group"
-                onClick={() => onFolderClick(folder)}
-              >
-                <div className="w-18 h-18 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3">
-                  <FolderOutlined className="text-white text-3xl drop-shadow-sm" />
-                </div>
-                <div>
-                  <div className="font-bold text-2xl text-gray-800 group-hover:text-blue-600 transition-colors mb-2">
-                    {folder.title}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-gray-200/50 shadow-sm">
-                      📄 {folder.children.length} 个书签
-                    </span>
-                    {folder.childFolders.length > 0 && (
-                      <span className="text-sm text-blue-600 bg-blue-100/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-blue-200/50 shadow-sm">
-                        📁 + {folder.childFolders.length} 个子文件夹
-                      </span>
-                    )}
-                  </div>
-                </div>
+          {/* 显示所有子文件夹 */}
+          {folder.childFolders.length > 0 && (
+            <div className="space-y-2 mb-4">
+              <div className="text-sm font-medium text-gray-600 mb-2">
+                子文件夹
               </div>
-              <div className="flex items-center gap-3">
+              {folder.childFolders.map((subFolder) => (
                 <div
-                  {...attributes}
-                  {...listeners}
-                  className="cursor-move p-3 hover:bg-white/80 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:shadow-lg border border-gray-200/50"
+                  key={subFolder.id}
+                  className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                  onClick={() => onFolderClick(subFolder)}
                 >
-                  <DragOutlined className="text-gray-500 text-lg" />
-                </div>
-                <Popconfirm
-                  title="确定删除这个文件夹吗？"
-                  onConfirm={() => onDelete(folder.id)}
-                  okText="删除"
-                  cancelText="取消"
-                >
-                  <Button
-                    type="text"
-                    size="large"
-                    icon={<DeleteOutlined />}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50/80 backdrop-blur-sm rounded-2xl transition-all duration-300 hover:shadow-lg border border-red-200/50"
-                  />
-                </Popconfirm>
-              </div>
-            </div>
-
-            {/* 显示所有子文件夹 */}
-            {folder.childFolders.length > 0 && (
-              <div className="space-y-2 mb-4">
-                <div className="text-sm font-medium text-gray-600 mb-2">
-                  子文件夹
-                </div>
-                {folder.childFolders.map((subFolder) => (
-                  <div
-                    key={subFolder.id}
-                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
-                    onClick={() => onFolderClick(subFolder)}
-                  >
-                    <FolderOutlined className="text-blue-600 text-lg" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-blue-800 font-medium hover:text-blue-600">
-                        {subFolder.title}
-                      </div>
-                      <div className="text-xs text-blue-600">
-                        {subFolder.children.length} 个书签
-                        {subFolder.childFolders.length > 0 && (
-                          <span className="ml-1">
-                            + {subFolder.childFolders.length} 个子文件夹
-                          </span>
-                        )}
-                      </div>
+                  <FolderOutlined className="text-blue-600 text-lg" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-blue-800 font-medium hover:text-blue-600">
+                      {subFolder.title}
                     </div>
-                    <span className="text-xs text-blue-500 bg-blue-200 px-2 py-1 rounded">
-                      文件夹
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 显示所有书签预览 */}
-            {folder.children.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-600 mb-2">
-                  书签
-                </div>
-                {folder.children.map((bookmark) => (
-                  <div
-                    key={bookmark.id}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
-                  >
-                    <img
-                      src={bookmark.favicon}
-                      alt="favicon"
-                      className="w-5 h-5 flex-shrink-0"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "/assets/default-favicon.png";
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className="text-sm text-gray-700 truncate cursor-pointer hover:text-blue-600 font-medium"
-                        onClick={() => window.open(bookmark.url, "_blank")}
-                      >
-                        {bookmark.title}
-                      </div>
-                      {bookmark.tags.length > 0 && (
-                        <div className="flex gap-1 mt-1 flex-wrap">
-                          {bookmark.tags.map((tag) => (
-                            <Tag key={tag} color="blue">
-                              {tag}
-                            </Tag>
-                          ))}
-                        </div>
+                    <div className="text-xs text-blue-600">
+                      {subFolder.children.length} 个书签
+                      {subFolder.childFolders.length > 0 && (
+                        <span className="ml-1">
+                          + {subFolder.childFolders.length} 个子文件夹
+                        </span>
                       )}
                     </div>
-                    <Popconfirm
-                      title="确定删除这个书签吗？"
-                      onConfirm={() => onBookmarkDelete(bookmark.id)}
-                      okText="删除"
-                      cancelText="取消"
-                    >
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<DeleteOutlined />}
-                        className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100"
-                      />
-                    </Popconfirm>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  <span className="text-xs text-blue-500 bg-blue-200 px-2 py-1 rounded">
+                    文件夹
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 显示所有书签预览 */}
+          {folder.children.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-600 mb-2">书签</div>
+              {folder.children.map((bookmark) => (
+                <div
+                  key={bookmark.id}
+                  className={`flex items-center gap-3 p-3 rounded-lg transition-colors group ${
+                    searchQuery &&
+                    highlightText &&
+                    (bookmark.title
+                      .toLowerCase()
+                      .includes(searchQuery!.toLowerCase()) ||
+                      bookmark.url
+                        .toLowerCase()
+                        .includes(searchQuery!.toLowerCase()) ||
+                      bookmark.tags.some((tag) =>
+                        tag.toLowerCase().includes(searchQuery!.toLowerCase())
+                      ))
+                      ? "bg-green-50 border border-green-200 hover:bg-green-100"
+                      : "bg-gray-50 hover:bg-gray-100"
+                  }`}
+                >
+                  <img
+                    src={bookmark.favicon}
+                    alt="favicon"
+                    className="w-5 h-5 flex-shrink-0"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "/assets/default-favicon.png";
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="text-sm text-gray-700 truncate cursor-pointer hover:text-blue-600 font-medium"
+                      onClick={() => window.open(bookmark.url, "_blank")}
+                    >
+                      {searchQuery && highlightText
+                        ? highlightText!(bookmark.title, searchQuery!)
+                        : bookmark.title}
+                    </div>
+                    {bookmark.tags.length > 0 && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {bookmark.tags.map((tag) => (
+                          <Tag key={tag} color="blue">
+                            {searchQuery && highlightText
+                              ? highlightText!(tag, searchQuery!)
+                              : tag}
+                          </Tag>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <Popconfirm
+                    title="确定删除这个书签吗？"
+                    onConfirm={() => onBookmarkDelete(bookmark.id)}
+                    okText="删除"
+                    cancelText="取消"
+                  >
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100"
+                    />
+                  </Popconfirm>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 };
 
 // 可拖拽的书签卡片组件
 const SortableBookmarkCard: React.FC<{
   bookmark: BookmarkItem;
   onDelete: (id: string) => void;
-  isCardView: boolean;
-}> = ({ bookmark, onDelete, isCardView }) => {
+  searchQuery?: string;
+  highlightText?: (text: string, query: string) => React.ReactNode;
+}> = ({ bookmark, onDelete, searchQuery, highlightText }) => {
   const {
     attributes,
     listeners,
@@ -426,12 +279,25 @@ const SortableBookmarkCard: React.FC<{
     window.open(bookmark.url, "_blank");
   };
 
-  if (isCardView) {
+  // 只使用列表视图
+  if (false) {
     return (
       <div ref={setNodeRef} style={style}>
         <Card
           size="small"
-          className="bookmark-card hover:shadow-lg transition-all duration-200 mb-3"
+          className={`bookmark-card hover:shadow-lg transition-all duration-200 mb-3 ${
+            searchQuery &&
+            highlightText &&
+            (bookmark.title
+              .toLowerCase()
+              .includes(searchQuery!.toLowerCase()) ||
+              bookmark.url.toLowerCase().includes(searchQuery!.toLowerCase()) ||
+              bookmark.tags.some((tag) =>
+                tag.toLowerCase().includes(searchQuery!.toLowerCase())
+              ))
+              ? "bg-green-50 border-green-200"
+              : ""
+          }`}
           bodyStyle={{ padding: "12px" }}
           extra={
             <Space>
@@ -466,7 +332,9 @@ const SortableBookmarkCard: React.FC<{
             />
             <div className="flex-1 min-w-0 cursor-pointer">
               <h4 className="text-sm font-medium text-gray-900 truncate hover:text-blue-600">
-                {bookmark.title}
+                {searchQuery && highlightText
+                  ? highlightText!(bookmark.title, searchQuery!)
+                  : bookmark.title}
               </h4>
               <p className="text-xs text-gray-500 truncate mt-1">
                 {bookmark.url}
@@ -475,7 +343,9 @@ const SortableBookmarkCard: React.FC<{
                 <div className="flex flex-wrap gap-1 mt-2">
                   {bookmark.tags.slice(0, 4).map((tag) => (
                     <Tag key={tag} color="blue" className="text-xs">
-                      {tag}
+                      {searchQuery && highlightText
+                        ? highlightText!(tag, searchQuery!)
+                        : tag}
                     </Tag>
                   ))}
                   {bookmark.tags.length > 4 && (
@@ -513,10 +383,14 @@ const SortableBookmarkCard: React.FC<{
                 onClick={handleClick}
               >
                 <div className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                  {bookmark.title}
+                  {searchQuery && highlightText
+                    ? highlightText(bookmark.title, searchQuery)
+                    : bookmark.title}
                 </div>
                 <div className="text-sm text-gray-500 truncate mt-1">
-                  {bookmark.url}
+                  {searchQuery && highlightText
+                    ? highlightText(bookmark.url, searchQuery)
+                    : bookmark.url}
                 </div>
                 {bookmark.tags.length > 0 && (
                   <div className="flex gap-1 mt-2">
@@ -525,7 +399,10 @@ const SortableBookmarkCard: React.FC<{
                         key={tag}
                         className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
                       >
-                        #{tag}
+                        #
+                        {searchQuery && highlightText
+                          ? highlightText(tag, searchQuery)
+                          : tag}
                       </span>
                     ))}
                     {bookmark.tags.length > 3 && (
@@ -570,7 +447,6 @@ const MainPage: React.FC = () => {
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isCardView, setIsCardView] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<FolderItem | null>(null);
   const [folderPath, setFolderPath] = useState<FolderItem[]>([]);
 
@@ -923,6 +799,31 @@ const MainPage: React.FC = () => {
     );
   };
 
+  // 高亮搜索结果的函数
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+
+    // 使用正则表达式进行全局匹配和高亮
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escapedQuery})`, "gi");
+    const parts = text.split(regex);
+
+    return parts.map((part, index) => {
+      // 检查这个部分是否匹配查询（不区分大小写）
+      const isMatch = part.toLowerCase() === query.toLowerCase();
+      return isMatch ? (
+        <mark
+          key={index}
+          className="bg-yellow-200 text-yellow-900 px-1 rounded"
+        >
+          {part}
+        </mark>
+      ) : (
+        part
+      );
+    });
+  };
+
   const getFilteredBookmarks = () => {
     if (!selectedFolder || !searchQuery) return selectedFolder?.children || [];
 
@@ -954,6 +855,44 @@ const MainPage: React.FC = () => {
     );
   };
 
+  // 获取所有匹配的书签（包括子文件夹中的）
+  const getAllFilteredBookmarks = () => {
+    if (!searchQuery) return [];
+
+    const allBookmarks: BookmarkItem[] = [];
+
+    if (selectedFolder) {
+      // 在特定文件夹中搜索
+      // 添加当前文件夹的书签
+      allBookmarks.push(...selectedFolder.children);
+
+      // 添加子文件夹中的书签
+      selectedFolder.childFolders.forEach((subFolder) => {
+        allBookmarks.push(...subFolder.children);
+      });
+    } else {
+      // 在根目录中搜索所有文件夹的书签
+      folders.forEach((folder) => {
+        // 添加文件夹中的书签
+        allBookmarks.push(...folder.children);
+
+        // 添加子文件夹中的书签
+        folder.childFolders.forEach((subFolder) => {
+          allBookmarks.push(...subFolder.children);
+        });
+      });
+    }
+
+    return allBookmarks.filter(
+      (bookmark) =>
+        bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        bookmark.tags.some((tag) =>
+          tag.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+    );
+  };
+
   return (
     <Layout className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 animated-gradient">
       <Header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md shadow-lg border-b border-white/20 flex items-center justify-between">
@@ -977,35 +916,9 @@ const MainPage: React.FC = () => {
                 prefix={<SearchOutlined className="text-gray-400" />}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-72 h-10 rounded-xl border-gray-200 focus:border-blue-500 focus:shadow-lg transition-all duration-200"
+                className="w-96 h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:shadow-lg transition-all duration-200 text-lg"
                 allowClear
               />
-            </div>
-            <div className="flex items-center space-x-2 bg-gray-100 rounded-xl p-1">
-              <Tooltip title="卡片视图">
-                <Button
-                  type={isCardView ? "primary" : "text"}
-                  icon={<AppstoreOutlined />}
-                  onClick={() => setIsCardView(true)}
-                  className={`rounded-lg transition-all duration-200 ${
-                    isCardView
-                      ? "bg-blue-600 shadow-md"
-                      : "hover:bg-white hover:shadow-sm"
-                  }`}
-                />
-              </Tooltip>
-              <Tooltip title="列表视图">
-                <Button
-                  type={!isCardView ? "primary" : "text"}
-                  icon={<BarsOutlined />}
-                  onClick={() => setIsCardView(false)}
-                  className={`rounded-lg transition-all duration-200 ${
-                    !isCardView
-                      ? "bg-blue-600 shadow-md"
-                      : "hover:bg-white hover:shadow-sm"
-                  }`}
-                />
-              </Tooltip>
             </div>
             <Button
               type="text"
@@ -1106,21 +1019,16 @@ const MainPage: React.FC = () => {
                       items={getFilteredSubFolders().map((f) => f.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div
-                        className={
-                          isCardView
-                            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                            : "space-y-3"
-                        }
-                      >
+                      <div className="space-y-3">
                         {getFilteredSubFolders().map((subFolder) => (
                           <SortableFolderCard
                             key={subFolder.id}
                             folder={subFolder}
-                            isCardView={isCardView}
                             onDelete={handleFolderDelete}
                             onBookmarkDelete={handleDeleteBookmark}
                             onFolderClick={handleFolderClick}
+                            searchQuery={searchQuery}
+                            highlightText={highlightText}
                           />
                         ))}
                       </div>
@@ -1130,20 +1038,24 @@ const MainPage: React.FC = () => {
               )}
 
               {/* 显示书签 */}
-              {getFilteredBookmarks().length > 0 && (
+              {(searchQuery
+                ? getAllFilteredBookmarks().length > 0
+                : getFilteredBookmarks().length > 0) && (
                 <div>
                   <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <div className="w-2 h-8 bg-gradient-to-b from-green-500 via-emerald-500 to-teal-500 rounded-full shadow-sm"></div>
                     <span className="bg-green-100/60 px-4 py-2 rounded-2xl text-green-700 border border-green-200/50">
-                      📄 书签 ({getFilteredBookmarks().length})
+                      📄 书签 (
+                      {searchQuery
+                        ? getAllFilteredBookmarks().length
+                        : getFilteredBookmarks().length}
+                      )
                     </span>
-                    {searchQuery &&
-                      selectedFolder.children.length >
-                        getFilteredBookmarks().length && (
-                        <span className="text-sm text-gray-500 bg-gray-100/60 px-3 py-1 rounded-xl border border-gray-200/50">
-                          (共 {selectedFolder.children.length} 个)
-                        </span>
-                      )}
+                    {searchQuery && (
+                      <span className="text-sm text-gray-500 bg-gray-100/60 px-3 py-1 rounded-xl border border-gray-200/50">
+                        (包含子文件夹)
+                      </span>
+                    )}
                   </h3>
                   <DndContext
                     sensors={sensors}
@@ -1151,36 +1063,26 @@ const MainPage: React.FC = () => {
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={getFilteredBookmarks().map((b) => b.id)}
+                      items={(searchQuery
+                        ? getAllFilteredBookmarks()
+                        : getFilteredBookmarks()
+                      ).map((b) => b.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      {getFilteredBookmarks().length > 0 ? (
-                        <div
-                          className={
-                            isCardView
-                              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                              : "space-y-2"
-                          }
-                        >
-                          {getFilteredBookmarks().map((bookmark) => (
-                            <SortableBookmarkCard
-                              key={bookmark.id}
-                              bookmark={bookmark}
-                              onDelete={handleDeleteBookmark}
-                              isCardView={isCardView}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <Empty
-                          description={
-                            searchQuery
-                              ? "没有找到匹配的书签"
-                              : "此文件夹中没有书签"
-                          }
-                          className="py-8"
-                        />
-                      )}
+                      <div className="space-y-2">
+                        {(searchQuery
+                          ? getAllFilteredBookmarks()
+                          : getFilteredBookmarks()
+                        ).map((bookmark) => (
+                          <SortableBookmarkCard
+                            key={bookmark.id}
+                            bookmark={bookmark}
+                            onDelete={handleDeleteBookmark}
+                            searchQuery={searchQuery}
+                            highlightText={highlightText}
+                          />
+                        ))}
+                      </div>
                     </SortableContext>
                   </DndContext>
                 </div>
@@ -1188,7 +1090,9 @@ const MainPage: React.FC = () => {
 
               {/* 如果文件夹为空或搜索无结果 */}
               {getFilteredSubFolders().length === 0 &&
-                getFilteredBookmarks().length === 0 && (
+                (searchQuery
+                  ? getAllFilteredBookmarks().length === 0
+                  : getFilteredBookmarks().length === 0) && (
                   <div className="text-center py-16">
                     <div className="inline-flex flex-col items-center space-y-4 bg-white/80 backdrop-blur-sm px-8 py-6 rounded-2xl border border-white/40 shadow-lg">
                       <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
@@ -1207,49 +1111,84 @@ const MainPage: React.FC = () => {
                 )}
             </div>
           ) : (
-            // 显示文件夹列表
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={getFilteredFolders().map((f) => f.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {getFilteredFolders().length > 0 ? (
-                  <div
-                    className={
-                      isCardView
-                        ? "grid grid-cols-1 lg:grid-cols-2 gap-8"
-                        : "grid grid-cols-1 lg:grid-cols-2 gap-6"
-                    }
+            // 显示文件夹列表和搜索结果
+            <div className="space-y-6">
+              {/* 显示匹配的书签（仅在搜索时） */}
+              {searchQuery && getAllFilteredBookmarks().length > 0 && (
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                    <div className="w-2 h-8 bg-gradient-to-b from-green-500 via-emerald-500 to-teal-500 rounded-full shadow-sm"></div>
+                    <span className="bg-green-100/60 px-4 py-2 rounded-2xl text-green-700 border border-green-200/50">
+                      📄 书签 ({getAllFilteredBookmarks().length})
+                    </span>
+                    <span className="text-sm text-gray-500 bg-gray-100/60 px-3 py-1 rounded-xl border border-gray-200/50">
+                      (包含所有文件夹)
+                    </span>
+                  </h3>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
                   >
-                    {getFilteredFolders().map((folder) => (
-                      <SortableFolderCard
-                        key={folder.id}
-                        folder={folder}
-                        isCardView={isCardView}
-                        onDelete={handleFolderDelete}
-                        onBookmarkDelete={handleDeleteBookmark}
-                        onFolderClick={handleFolderClick}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-16">
-                    <div className="inline-flex flex-col items-center space-y-4 bg-white/80 backdrop-blur-sm px-8 py-6 rounded-2xl border border-white/40 shadow-lg">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl flex items-center justify-center">
-                        <GlobalOutlined className="text-2xl text-blue-500" />
+                    <SortableContext
+                      items={getAllFilteredBookmarks().map((b) => b.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {getAllFilteredBookmarks().map((bookmark) => (
+                          <SortableBookmarkCard
+                            key={bookmark.id}
+                            bookmark={bookmark}
+                            onDelete={handleDeleteBookmark}
+                            searchQuery={searchQuery}
+                            highlightText={highlightText}
+                          />
+                        ))}
                       </div>
-                      <div className="text-lg text-gray-600 font-medium">
-                        {searchQuery ? "没有找到匹配的文件夹" : "暂无文件夹"}
+                    </SortableContext>
+                  </DndContext>
+                </div>
+              )}
+
+              {/* 显示文件夹列表 */}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={getFilteredFolders().map((f) => f.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {getFilteredFolders().length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {getFilteredFolders().map((folder) => (
+                        <SortableFolderCard
+                          key={folder.id}
+                          folder={folder}
+                          onDelete={handleFolderDelete}
+                          onBookmarkDelete={handleDeleteBookmark}
+                          onFolderClick={handleFolderClick}
+                          searchQuery={searchQuery}
+                          highlightText={highlightText}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-16">
+                      <div className="inline-flex flex-col items-center space-y-4 bg-white/80 backdrop-blur-sm px-8 py-6 rounded-2xl border border-white/40 shadow-lg">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl flex items-center justify-center">
+                          <GlobalOutlined className="text-2xl text-blue-500" />
+                        </div>
+                        <div className="text-lg text-gray-600 font-medium">
+                          {searchQuery ? "没有找到匹配的内容" : "暂无文件夹"}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </SortableContext>
-            </DndContext>
+                  )}
+                </SortableContext>
+              </DndContext>
+            </div>
           )}
         </div>
       </Content>
