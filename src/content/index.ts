@@ -16,7 +16,7 @@ class PageAnalyzer {
     // 合并meta关键词和提取的关键词
     const allKeywords = [...metaKeywords, ...extractedKeywords]
       .filter((keyword, index, arr) => arr.indexOf(keyword) === index) // 去重
-      .slice(0, 15); // 限制数量
+      .slice(0, 6); // 限制数量为6个高频核心词
 
     console.log("最终关键词:", allKeywords);
 
@@ -75,19 +75,96 @@ class PageAnalyzer {
     return text.slice(0, 1000).trim();
   }
 
-  // 改进的关键词提取
+  // 优化的关键词提取 - 使用搜索引擎模式分词
   private extractKeywords(text: string): string[] {
     if (!text) return [];
 
     try {
-      // 尝试使用 nodejieba 进行中文分词
+      // 优先使用 nodejieba 的搜索引擎模式分词
       if (typeof window !== "undefined" && (window as any).nodejieba) {
         const nodejieba = (window as any).nodejieba;
-        const words = nodejieba.extract(text, 10);
-        return words.map((item: any) => item.word);
+
+        // 使用搜索引擎模式分词，更适合关键词提取
+        const searchWords = nodejieba.cutForSearch(text);
+
+        // 使用关键词提取算法获取权重最高的词
+        const extractedWords = nodejieba.extract(text, 8);
+
+        // 结合搜索引擎分词和关键词提取的结果
+        const allWords = [
+          ...searchWords,
+          ...extractedWords.map((item: any) => item.word),
+        ];
+
+        // 统计词频，优先选择高频词
+        const wordCount = new Map<string, number>();
+        allWords.forEach((word) => {
+          if (word && word.length > 1 && word.length < 15) {
+            const count = wordCount.get(word) || 0;
+            wordCount.set(word, count + 1);
+          }
+        });
+
+        // 过滤停用词
+        const stopWords = new Set([
+          "的",
+          "了",
+          "是",
+          "在",
+          "有",
+          "和",
+          "就",
+          "不",
+          "人",
+          "都",
+          "一",
+          "一个",
+          "这个",
+          "那个",
+          "什么",
+          "怎么",
+          "为什么",
+          "因为",
+          "所以",
+          "但是",
+          "然后",
+          "the",
+          "and",
+          "or",
+          "but",
+          "in",
+          "on",
+          "at",
+          "to",
+          "for",
+          "of",
+          "with",
+          "by",
+          "a",
+          "an",
+          "is",
+          "are",
+          "was",
+          "were",
+          "be",
+          "been",
+          "have",
+          "has",
+          "had",
+        ]);
+
+        // 按频率排序，返回前6个高频核心词
+        const filteredWords = Array.from(wordCount.entries())
+          .filter(([word]) => !stopWords.has(word))
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
+          .map(([word]) => word);
+
+        console.log("nodejieba 提取的关键词:", filteredWords);
+        return filteredWords;
       }
     } catch (error) {
-      console.log("nodejieba 不可用，使用备用方案");
+      console.log("nodejieba 不可用，使用备用方案:", error);
     }
 
     // 备用方案：改进的简单分词
@@ -118,6 +195,15 @@ class PageAnalyzer {
       "都",
       "一",
       "一个",
+      "这个",
+      "那个",
+      "什么",
+      "怎么",
+      "为什么",
+      "因为",
+      "所以",
+      "但是",
+      "然后",
       "the",
       "and",
       "or",
@@ -130,7 +216,19 @@ class PageAnalyzer {
       "of",
       "with",
       "by",
+      "a",
+      "an",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "have",
+      "has",
+      "had",
     ]);
+
     const wordCount = new Map<string, number>();
 
     allWords.forEach((word) => {
@@ -140,11 +238,14 @@ class PageAnalyzer {
       }
     });
 
-    // 按频率排序，返回前10个
-    return Array.from(wordCount.entries())
+    // 按频率排序，返回前6个高频核心词
+    const result = Array.from(wordCount.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
+      .slice(0, 6)
       .map(([word]) => word);
+
+    console.log("备用方案提取的关键词:", result);
+    return result;
   }
 }
 

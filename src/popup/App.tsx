@@ -101,16 +101,71 @@ const App: React.FC = () => {
   };
 
   const parseBookmarkTitle = (title: string) => {
-    // 解析标题中的关键词（格式：标题 #关键词1, 关键词2）
+    // 解析标题中的关键词（支持多种格式）
+    // 格式1: 标题 #关键词1, 关键词2
+    // 格式2: 标题 #关键词1 #关键词2
+    // 格式3: 标题 #关键词1,关键词2
+    // 格式4: 标题中包含冒号分隔的描述性内容
+
+    // 先尝试匹配 # 开头的关键词
     const keywordMatch = title.match(/^(.+?)\s*#(.+)$/);
     if (keywordMatch) {
       const cleanTitle = keywordMatch[1].trim();
-      const keywords = keywordMatch[2]
-        .split(",")
+      const keywordString = keywordMatch[2];
+
+      // 支持多种分隔符：逗号、空格
+      const keywords = keywordString
+        .split(/[,，\s]+/)
         .map((k) => k.trim())
-        .filter((k) => k);
+        .filter((k) => k && k.length > 0);
+
       return { title: cleanTitle, keywords };
     }
+
+    // 检查是否有冒号分隔的描述性内容（如：yanyiwu/nodejieba: "结巴"中文分词的Node.js版本）
+    const colonMatch = title.match(/^(.+?):\s*(.+)$/);
+    if (colonMatch) {
+      const mainTitle = colonMatch[1].trim();
+      const description = colonMatch[2].trim();
+
+      // 从描述中提取关键词
+      const descriptionWords = description
+        .replace(/["""]/g, "") // 移除引号
+        .split(/[\s,，。、]+/)
+        .map((word) => word.trim())
+        .filter((word) => word.length > 1 && word.length < 20);
+
+      // 从主标题中提取关键词
+      const titleWords = mainTitle
+        .split(/[/\s\-_]+/)
+        .map((word) => word.trim())
+        .filter((word) => word.length > 1 && word.length < 20);
+
+      const allKeywords = [...titleWords, ...descriptionWords].slice(0, 6);
+
+      return {
+        title: mainTitle,
+        keywords: allKeywords,
+      };
+    }
+
+    // 如果没有特殊格式，尝试从标题中提取有意义的词汇
+    const words = title.split(/[\s\-_\/]+/);
+    const potentialKeywords = words.filter(
+      (word) =>
+        word.length > 2 &&
+        word.length < 20 &&
+        !word.match(/^(https?|www\.|\.com|\.org|\.net|chrome|newtab)/) && // 排除URL和特殊页面
+        !word.match(/^[0-9]+$/) // 排除纯数字
+    );
+
+    if (potentialKeywords.length > 0) {
+      return {
+        title,
+        keywords: potentialKeywords.slice(0, 4), // 最多取4个潜在关键词
+      };
+    }
+
     return { title, keywords: [] };
   };
 
@@ -369,22 +424,25 @@ const App: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-gray-900 truncate">
                         {bookmark.title}
-                        {bookmark.tags.length > 0 && (
-                          <span className="ml-2 text-xs text-blue-600 font-normal">
-                            #{bookmark.tags.slice(0, 3).join(", ")}
-                          </span>
-                        )}
                       </h4>
                       <p className="text-xs text-gray-500 truncate mt-1">
                         {bookmark.url}
                       </p>
-                      {bookmark.tags.length > 3 && (
-                        <div className="flex gap-1 mt-2">
-                          {bookmark.tags.slice(3).map((tag) => (
-                            <Tag key={tag} color="blue">
-                              {tag}
-                            </Tag>
+                      {bookmark.tags.length > 0 && (
+                        <div className="flex gap-1 mt-2 flex-wrap">
+                          {bookmark.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                            >
+                              #{tag}
+                            </span>
                           ))}
+                          {bookmark.tags.length > 3 && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                              +{bookmark.tags.length - 3}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>

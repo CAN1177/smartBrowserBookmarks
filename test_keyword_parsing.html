@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>关键词解析测试</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .test-case {
+        border: 1px solid #ddd;
+        margin: 10px 0;
+        padding: 15px;
+        border-radius: 5px;
+        background: #f9f9f9;
+      }
+      .result {
+        background: #e8f4fd;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 3px;
+      }
+      .keywords {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin: 10px 0;
+      }
+      .keyword {
+        background: #1890ff;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>关键词解析测试</h1>
+    <p>测试弹窗页面的关键词解析逻辑</p>
+
+    <div id="test-results"></div>
+
+    <script>
+      // 复制弹窗页面的关键词解析逻辑
+      function parseBookmarkTitle(title) {
+        // 解析标题中的关键词（支持多种格式）
+        // 格式1: 标题 #关键词1, 关键词2
+        // 格式2: 标题 #关键词1 #关键词2
+        // 格式3: 标题 #关键词1,关键词2
+        // 格式4: 标题中包含冒号分隔的描述性内容
+
+        // 先尝试匹配 # 开头的关键词
+        const keywordMatch = title.match(/^(.+?)\s*#(.+)$/);
+        if (keywordMatch) {
+          const cleanTitle = keywordMatch[1].trim();
+          const keywordString = keywordMatch[2];
+
+          // 支持多种分隔符：逗号、空格
+          const keywords = keywordString
+            .split(/[,，\s]+/)
+            .map((k) => k.trim())
+            .filter((k) => k && k.length > 0);
+
+          return { title: cleanTitle, keywords };
+        }
+
+        // 检查是否有冒号分隔的描述性内容（如：yanyiwu/nodejieba: "结巴"中文分词的Node.js版本）
+        const colonMatch = title.match(/^(.+?):\s*(.+)$/);
+        if (colonMatch) {
+          const mainTitle = colonMatch[1].trim();
+          const description = colonMatch[2].trim();
+
+          // 从描述中提取关键词
+          const descriptionWords = description
+            .replace(/["""]/g, "") // 移除引号
+            .split(/[\s,，。、]+/)
+            .map((word) => word.trim())
+            .filter((word) => word.length > 1 && word.length < 20);
+
+          // 从主标题中提取关键词
+          const titleWords = mainTitle
+            .split(/[/\s\-_]+/)
+            .map((word) => word.trim())
+            .filter((word) => word.length > 1 && word.length < 20);
+
+          const allKeywords = [...titleWords, ...descriptionWords].slice(0, 6);
+
+          return {
+            title: mainTitle,
+            keywords: allKeywords,
+          };
+        }
+
+        // 如果没有特殊格式，尝试从标题中提取有意义的词汇
+        const words = title.split(/[\s\-_\/]+/);
+        const potentialKeywords = words.filter(
+          (word) =>
+            word.length > 2 &&
+            word.length < 20 &&
+            !word.match(/^(https?|www\.|\.com|\.org|\.net|chrome|newtab)/) && // 排除URL和特殊页面
+            !word.match(/^[0-9]+$/) // 排除纯数字
+        );
+
+        if (potentialKeywords.length > 0) {
+          return {
+            title,
+            keywords: potentialKeywords.slice(0, 4), // 最多取4个潜在关键词
+          };
+        }
+
+        return { title, keywords: [] };
+      }
+
+      // 测试用例
+      const testCases = [
+        'yanyiwu/nodejieba: "结巴"中文分词的Node.js版本',
+        "新标签页 #浏览器 #系统页面",
+        "React 官方文档 #前端 #框架 #JavaScript",
+        "GitHub - 代码托管平台 #开发 #工具",
+        "Chrome DevTools 调试指南 #前端 #调试 #工具",
+        "Node.js 中文网 #后端 #JavaScript #服务器",
+        "Vue.js 渐进式框架 #前端 #框架 #MVVM",
+        "TypeScript 官方文档 #前端 #类型 #JavaScript",
+        "Webpack 模块打包器 #前端 #构建 #工具",
+        "ESLint 代码检查工具 #前端 #代码质量 #工具",
+        // 测试实际保存的格式
+        "所有 - 滴答清单 #滴答清单, 嘀嗒清单, dida365, dida, todo, to do",
+        "滴答清单任务管理 #滴答清单,嘀嗒清单,dida365,dida,todo",
+      ];
+
+      // 运行测试
+      function runTests() {
+        const resultsDiv = document.getElementById("test-results");
+
+        testCases.forEach((testTitle, index) => {
+          const result = parseBookmarkTitle(testTitle);
+
+          const testCaseDiv = document.createElement("div");
+          testCaseDiv.className = "test-case";
+
+          testCaseDiv.innerHTML = `
+            <h3>测试用例 ${index + 1}</h3>
+            <p><strong>原始标题:</strong> ${testTitle}</p>
+            <div class="result">
+              <p><strong>解析结果:</strong></p>
+              <p><strong>标题:</strong> ${result.title}</p>
+              <p><strong>关键词数量:</strong> ${result.keywords.length}</p>
+              <div class="keywords">
+                ${result.keywords
+                  .map((keyword) => `<span class="keyword">#${keyword}</span>`)
+                  .join("")}
+              </div>
+            </div>
+          `;
+
+          resultsDiv.appendChild(testCaseDiv);
+        });
+      }
+
+      // 页面加载完成后运行测试
+      window.addEventListener("load", runTests);
+    </script>
+  </body>
+</html>
