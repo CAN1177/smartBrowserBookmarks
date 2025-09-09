@@ -399,7 +399,7 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="flex-1 overflow-auto space-y-2 max-h-96">
+          <div className="flex-1 overflow-auto space-y-2 max-h-86">
             {loading ? (
               <div className="text-center py-8 text-gray-500">加载中...</div>
             ) : filteredBookmarks.length > 0 ? (

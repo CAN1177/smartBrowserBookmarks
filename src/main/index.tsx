@@ -788,7 +788,8 @@ const MainPage: React.FC = () => {
     return folders.filter(
       (folder) =>
         folder.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        folder.children.some(
+        // 使用递归函数检查文件夹中的所有书签（包括嵌套文件夹中的）
+        collectAllBookmarksFromFolder(folder).some(
           (bookmark) =>
             bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -844,7 +845,8 @@ const MainPage: React.FC = () => {
     return selectedFolder.childFolders.filter(
       (subFolder) =>
         subFolder.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        subFolder.children.some(
+        // 使用递归函数检查子文件夹中的所有书签（包括嵌套文件夹中的）
+        collectAllBookmarksFromFolder(subFolder).some(
           (bookmark) =>
             bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -855,6 +857,21 @@ const MainPage: React.FC = () => {
     );
   };
 
+  // 递归收集文件夹中的所有书签（包括所有嵌套层级）
+  const collectAllBookmarksFromFolder = (folder: FolderItem): BookmarkItem[] => {
+    const allBookmarks: BookmarkItem[] = [];
+    
+    // 添加当前文件夹的书签
+    allBookmarks.push(...folder.children);
+    
+    // 递归添加所有子文件夹中的书签
+    folder.childFolders.forEach((subFolder) => {
+      allBookmarks.push(...collectAllBookmarksFromFolder(subFolder));
+    });
+    
+    return allBookmarks;
+  };
+
   // 获取所有匹配的书签（包括子文件夹中的）
   const getAllFilteredBookmarks = () => {
     if (!searchQuery) return [];
@@ -862,24 +879,12 @@ const MainPage: React.FC = () => {
     const allBookmarks: BookmarkItem[] = [];
 
     if (selectedFolder) {
-      // 在特定文件夹中搜索
-      // 添加当前文件夹的书签
-      allBookmarks.push(...selectedFolder.children);
-
-      // 添加子文件夹中的书签
-      selectedFolder.childFolders.forEach((subFolder) => {
-        allBookmarks.push(...subFolder.children);
-      });
+      // 在特定文件夹中搜索，递归收集所有嵌套层级的书签
+      allBookmarks.push(...collectAllBookmarksFromFolder(selectedFolder));
     } else {
-      // 在根目录中搜索所有文件夹的书签
+      // 在根目录中搜索所有文件夹的书签，递归收集所有嵌套层级的书签
       folders.forEach((folder) => {
-        // 添加文件夹中的书签
-        allBookmarks.push(...folder.children);
-
-        // 添加子文件夹中的书签
-        folder.childFolders.forEach((subFolder) => {
-          allBookmarks.push(...subFolder.children);
-        });
+        allBookmarks.push(...collectAllBookmarksFromFolder(folder));
       });
     }
 
@@ -932,7 +937,7 @@ const MainPage: React.FC = () => {
         </div>
       </Header>
 
-      <Content className="max-w-7xl mx-auto p-8 relative">
+      <Content className="max-w-7xl mx-auto p-8 relative width-full">
         {/* 背景装饰元素 */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
@@ -1093,19 +1098,17 @@ const MainPage: React.FC = () => {
                 (searchQuery
                   ? getAllFilteredBookmarks().length === 0
                   : getFilteredBookmarks().length === 0) && (
-                  <div className="text-center py-16">
-                    <div className="inline-flex flex-col items-center space-y-4 bg-white/80 backdrop-blur-sm px-8 py-6 rounded-2xl border border-white/40 shadow-lg">
-                      <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
-                        <FolderOutlined className="text-2xl text-gray-400" />
-                      </div>
-                      <div className="text-lg text-gray-600 font-medium">
-                        {searchQuery
-                          ? "没有找到匹配的内容"
-                          : selectedFolder.childFolders.length === 0 &&
-                            selectedFolder.children.length === 0
-                          ? "此文件夹为空"
-                          : "没有找到匹配的内容"}
-                      </div>
+                  <div className="w-80 h-96 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 shadow-lg flex flex-col items-center justify-center space-y-4 mx-auto">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+                      <FolderOutlined className="text-2xl text-gray-400" />
+                    </div>
+                    <div className="text-lg text-gray-600 font-medium">
+                      {searchQuery
+                        ? "没有找到匹配的内容"
+                        : selectedFolder.childFolders.length === 0 &&
+                          selectedFolder.children.length === 0
+                        ? "此文件夹为空"
+                        : "没有找到匹配的内容"}
                     </div>
                   </div>
                 )}
@@ -1175,14 +1178,12 @@ const MainPage: React.FC = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-16">
-                      <div className="inline-flex flex-col items-center space-y-4 bg-white/80 backdrop-blur-sm px-8 py-6 rounded-2xl border border-white/40 shadow-lg">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl flex items-center justify-center">
-                          <GlobalOutlined className="text-2xl text-blue-500" />
-                        </div>
-                        <div className="text-lg text-gray-600 font-medium">
-                          {searchQuery ? "没有找到匹配的内容" : "暂无文件夹"}
-                        </div>
+                    <div className="w-80 h-96 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 shadow-lg flex flex-col items-center justify-center space-y-4 mx-auto">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl flex items-center justify-center">
+                        <GlobalOutlined className="text-2xl text-blue-500" />
+                      </div>
+                      <div className="text-lg text-gray-600 font-medium">
+                        {searchQuery ? "没有找到匹配的内容" : "暂无文件夹"}
                       </div>
                     </div>
                   )}
