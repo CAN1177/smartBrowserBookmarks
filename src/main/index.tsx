@@ -363,15 +363,15 @@ const SortableBookmarkCard: React.FC<{
   } else {
     // 简洁视图
     return (
-      <div ref={setNodeRef} style={style} className="mb-2">
-        <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
-          <div className="p-3">
-            <div className="flex items-center gap-3">
+      <div ref={setNodeRef} style={style} className="mb-3 w-full">
+        <div className="w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/60 hover:border-blue-200/60 group">
+          <div className="p-4">
+            <div className="flex items-center gap-4">
               <div className="flex-shrink-0">
                 <img
                   src={bookmark.favicon}
                   alt="favicon"
-                  className="w-8 h-8 rounded-lg border border-gray-200"
+                  className="w-10 h-10 rounded-xl border border-gray-200 shadow-sm group-hover:shadow-md transition-all duration-200"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "/assets/default-favicon.png";
@@ -382,22 +382,22 @@ const SortableBookmarkCard: React.FC<{
                 className="flex-1 min-w-0 cursor-pointer"
                 onClick={handleClick}
               >
-                <div className="font-medium text-gray-900 hover:text-blue-600 transition-colors">
+                <div className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors duration-200 leading-tight">
                   {searchQuery && highlightText
                     ? highlightText(bookmark.title, searchQuery)
                     : bookmark.title}
                 </div>
-                <div className="text-sm text-gray-500 truncate mt-1">
+                <div className="text-sm text-gray-500 truncate mt-1 group-hover:text-gray-600 transition-colors">
                   {searchQuery && highlightText
                     ? highlightText(bookmark.url, searchQuery)
                     : bookmark.url}
                 </div>
                 {bookmark.tags.length > 0 && (
-                  <div className="flex gap-1 mt-2">
-                    {bookmark.tags.slice(0, 3).map((tag) => (
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {bookmark.tags.slice(0, 4).map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
+                        className="px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 text-sm rounded-full border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         #
                         {searchQuery && highlightText
@@ -405,21 +405,21 @@ const SortableBookmarkCard: React.FC<{
                           : tag}
                       </span>
                     ))}
-                    {bookmark.tags.length > 3 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                        +{bookmark.tags.length - 3}
+                    {bookmark.tags.length > 4 && (
+                      <span className="px-3 py-1 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 text-sm rounded-full border border-gray-200/50 shadow-sm">
+                        +{bookmark.tags.length - 4}
                       </span>
                     )}
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <div
                   {...attributes}
                   {...listeners}
-                  className="cursor-move p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="cursor-move p-3 hover:bg-gray-100/80 backdrop-blur-sm rounded-xl transition-all duration-200 hover:shadow-md border border-gray-200/50"
                 >
-                  <DragOutlined className="text-gray-400" />
+                  <DragOutlined className="text-gray-400 text-lg" />
                 </div>
                 <Popconfirm
                   title="确定删除这个书签吗？"
@@ -429,9 +429,9 @@ const SortableBookmarkCard: React.FC<{
                 >
                   <Button
                     type="text"
-                    size="small"
+                    size="large"
                     icon={<DeleteOutlined />}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50/80 backdrop-blur-sm rounded-xl transition-all duration-200 hover:shadow-md border border-red-200/50"
                   />
                 </Popconfirm>
               </div>
@@ -858,17 +858,19 @@ const MainPage: React.FC = () => {
   };
 
   // 递归收集文件夹中的所有书签（包括所有嵌套层级）
-  const collectAllBookmarksFromFolder = (folder: FolderItem): BookmarkItem[] => {
+  const collectAllBookmarksFromFolder = (
+    folder: FolderItem
+  ): BookmarkItem[] => {
     const allBookmarks: BookmarkItem[] = [];
-    
+
     // 添加当前文件夹的书签
     allBookmarks.push(...folder.children);
-    
+
     // 递归添加所有子文件夹中的书签
     folder.childFolders.forEach((subFolder) => {
       allBookmarks.push(...collectAllBookmarksFromFolder(subFolder));
     });
-    
+
     return allBookmarks;
   };
 
@@ -945,7 +947,7 @@ const MainPage: React.FC = () => {
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-cyan-400/10 to-blue-600/10 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="relative bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/60 p-8 glass-effect">
+        <div className="relative w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/60 p-8 glass-effect">
           {selectedFolder && (
             <div className="mb-6 flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -1098,17 +1100,35 @@ const MainPage: React.FC = () => {
                 (searchQuery
                   ? getAllFilteredBookmarks().length === 0
                   : getFilteredBookmarks().length === 0) && (
-                  <div className="w-80 h-96 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 shadow-lg flex flex-col items-center justify-center space-y-4 mx-auto">
-                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
-                      <FolderOutlined className="text-2xl text-gray-400" />
+                  <div className="w-full min-h-[600px] bg-gradient-to-br from-white/90 via-blue-50/80 to-indigo-50/70 backdrop-blur-lg rounded-3xl border border-white/50 shadow-2xl flex flex-col items-center justify-center space-y-8 mx-auto py-16">
+                    <div className="w-32 h-32 bg-gradient-to-br from-blue-100 via-indigo-200 to-purple-200 rounded-3xl flex items-center justify-center shadow-xl transform hover:scale-105 transition-all duration-500">
+                      <FolderOutlined className="text-6xl text-blue-500 drop-shadow-lg" />
                     </div>
-                    <div className="text-lg text-gray-600 font-medium">
-                      {searchQuery
-                        ? "没有找到匹配的内容"
-                        : selectedFolder.childFolders.length === 0 &&
-                          selectedFolder.children.length === 0
-                        ? "此文件夹为空"
-                        : "没有找到匹配的内容"}
+                    <div className="text-center space-y-4 max-w-md">
+                      <div className="text-3xl font-bold bg-gradient-to-r from-gray-700 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        {searchQuery
+                          ? "没有找到匹配的内容"
+                          : selectedFolder.childFolders.length === 0 &&
+                            selectedFolder.children.length === 0
+                          ? "此文件夹为空"
+                          : "没有找到匹配的内容"}
+                      </div>
+                      <div className="text-lg text-gray-500 leading-relaxed">
+                        {searchQuery
+                          ? "尝试使用不同的关键词搜索，或检查拼写是否正确"
+                          : "这个文件夹还没有任何内容，您可以从浏览器添加书签"}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2 text-gray-400">
+                      <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse"></div>
+                      <div
+                        className="w-2 h-2 bg-indigo-300 rounded-full animate-pulse"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                      <div
+                        className="w-2 h-2 bg-purple-300 rounded-full animate-pulse"
+                        style={{ animationDelay: "0.4s" }}
+                      ></div>
                     </div>
                   </div>
                 )}
@@ -1118,7 +1138,7 @@ const MainPage: React.FC = () => {
             <div className="space-y-6">
               {/* 显示匹配的书签（仅在搜索时） */}
               {searchQuery && getAllFilteredBookmarks().length > 0 && (
-                <div>
+                <div className="w-full">
                   <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <div className="w-2 h-8 bg-gradient-to-b from-green-500 via-emerald-500 to-teal-500 rounded-full shadow-sm"></div>
                     <span className="bg-green-100/60 px-4 py-2 rounded-2xl text-green-700 border border-green-200/50">
@@ -1137,7 +1157,7 @@ const MainPage: React.FC = () => {
                       items={getAllFilteredBookmarks().map((b) => b.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2">
+                      <div className="w-full space-y-2">
                         {getAllFilteredBookmarks().map((bookmark) => (
                           <SortableBookmarkCard
                             key={bookmark.id}
@@ -1154,41 +1174,81 @@ const MainPage: React.FC = () => {
               )}
 
               {/* 显示文件夹列表 */}
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={getFilteredFolders().map((f) => f.id)}
-                  strategy={verticalListSortingStrategy}
+              <div className="w-full">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
                 >
-                  {getFilteredFolders().length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {getFilteredFolders().map((folder) => (
-                        <SortableFolderCard
-                          key={folder.id}
-                          folder={folder}
-                          onDelete={handleFolderDelete}
-                          onBookmarkDelete={handleDeleteBookmark}
-                          onFolderClick={handleFolderClick}
-                          searchQuery={searchQuery}
-                          highlightText={highlightText}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="w-80 h-96 bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 shadow-lg flex flex-col items-center justify-center space-y-4 mx-auto">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl flex items-center justify-center">
-                        <GlobalOutlined className="text-2xl text-blue-500" />
+                  <SortableContext
+                    items={getFilteredFolders().map((f) => f.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {getFilteredFolders().length > 0 ? (
+                      <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {getFilteredFolders().map((folder) => (
+                          <SortableFolderCard
+                            key={folder.id}
+                            folder={folder}
+                            onDelete={handleFolderDelete}
+                            onBookmarkDelete={handleDeleteBookmark}
+                            onFolderClick={handleFolderClick}
+                            searchQuery={searchQuery}
+                            highlightText={highlightText}
+                          />
+                        ))}
                       </div>
-                      <div className="text-lg text-gray-600 font-medium">
-                        {searchQuery ? "没有找到匹配的内容" : "暂无文件夹"}
+                    ) : (
+                      <div className="w-full min-h-[700px] bg-gradient-to-br from-white/95 via-slate-50/90 to-blue-50/80 backdrop-blur-xl rounded-4xl border border-white/60 shadow-2xl flex flex-col items-center justify-center space-y-10 mx-auto py-20">
+                        <div className="relative">
+                          <div className="w-40 h-40 bg-gradient-to-br from-blue-200 via-indigo-300 to-purple-300 rounded-full flex items-center justify-center shadow-2xl transform hover:scale-110 hover:rotate-6 transition-all duration-700 group">
+                            <GlobalOutlined className="text-7xl text-white drop-shadow-xl group-hover:drop-shadow-2xl transition-all duration-500" />
+                          </div>
+                          <div className="absolute -top-4 -right-4 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full animate-bounce shadow-lg"></div>
+                          <div className="absolute -bottom-2 -left-6 w-6 h-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
+                        </div>
+                        <div className="text-center space-y-6 max-w-lg">
+                          <div className="text-4xl font-bold bg-gradient-to-r from-slate-700 via-blue-600 to-indigo-700 bg-clip-text text-transparent leading-tight">
+                            {searchQuery
+                              ? "没有找到匹配的内容"
+                              : "欢迎使用智能书签管理"}
+                          </div>
+                          <div className="text-xl text-gray-500 leading-relaxed px-4">
+                            {searchQuery
+                              ? "尝试使用不同的关键词搜索，或浏览所有文件夹查找您需要的内容"
+                              : "您还没有创建任何文件夹。开始使用浏览器收藏夹功能，让我们帮您更好地管理书签！"}
+                          </div>
+                          {!searchQuery && (
+                            <div className="bg-gradient-to-r from-blue-100/80 via-indigo-100/80 to-purple-100/80 backdrop-blur-sm rounded-2xl p-6 border border-blue-200/50 shadow-lg">
+                              <div className="text-sm text-blue-700 font-medium mb-2">
+                                💡 小贴士
+                              </div>
+                              <div className="text-sm text-blue-600 leading-relaxed">
+                                在浏览器中创建书签文件夹，然后刷新此页面即可开始管理您的智能书签
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-center space-x-3">
+                          <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full animate-bounce shadow-lg"></div>
+                          <div
+                            className="w-3 h-3 bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full animate-bounce shadow-lg"
+                            style={{ animationDelay: "0.1s" }}
+                          ></div>
+                          <div
+                            className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full animate-bounce shadow-lg"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
+                          <div
+                            className="w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full animate-bounce shadow-lg"
+                            style={{ animationDelay: "0.3s" }}
+                          ></div>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </SortableContext>
-              </DndContext>
+                    )}
+                  </SortableContext>
+                </DndContext>
+              </div>
             </div>
           )}
         </div>
