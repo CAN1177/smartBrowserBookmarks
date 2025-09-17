@@ -261,8 +261,19 @@ const App: React.FC = () => {
     return folders;
   };
 
-  const handleBookmarkClick = async (url: string) => {
+  const handleBookmarkClick = async (id: string, url: string) => {
     try {
+      // 从书签标题中解析当前计数与标签，计数+1并写回
+      const nodes = await chrome.bookmarks.get(id);
+      if (nodes && nodes[0]) {
+        const currentTitle = nodes[0].title || "";
+        const parsed = parseBookmarkTitle(currentTitle);
+        const base = stripVisitCount(parsed.title);
+        const currentCount = getVisitCountFromTitle(currentTitle) || 0;
+        const newCount = currentCount + 1;
+        const newTitle = buildTitleWithCountAndTags(base, newCount, parsed.keywords || []);
+        await chrome.bookmarks.update(id, { title: newTitle });
+      }
       await chrome.tabs.create({ url });
       window.close(); // 关闭弹窗
     } catch (error) {
@@ -278,7 +289,7 @@ const App: React.FC = () => {
   const handleTreeSelect = (_selectedKeys: React.Key[], info: any) => {
     const node = info.node;
     if (node.isLeaf && node.url) {
-      handleBookmarkClick(node.url);
+      handleBookmarkClick(node.key, node.url);
     }
   };
 
@@ -408,7 +419,7 @@ const App: React.FC = () => {
                   key={bookmark.id}
                   size="small"
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => handleBookmarkClick(bookmark.url)}
+                  onClick={() => handleBookmarkClick(bookmark.id, bookmark.url)}
                   bodyStyle={{ padding: "12px" }}
                 >
                   <div className="flex items-start gap-3">
@@ -674,3 +685,21 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+// 访问计数解析/构建辅助，与主界面逻辑保持一致
+const getVisitCountFromTitle = (title: string): number => {
+  const m = title.match(/\((\d+)\)\s*$/);
+  return m ? parseInt(m[1], 10) : 0;
+};
+const stripVisitCount = (title: string): string => {
+  return title.replace(/\s*\(\d+\)\s*$/, "");
+};
+const buildTitleWithCountAndTags = (
+  baseTitle: string,
+  count: number,
+  tags: string[]
+): string => {
+  const countStr = count > 0 ? ` (${count})` : "";
+  const tagsStr = tags && tags.length ? ` #${tags.slice(0, 5).join(", ")}` : "";
+  return `${baseTitle.trim()}${countStr}${tagsStr}`;
+};

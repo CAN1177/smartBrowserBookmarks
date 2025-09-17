@@ -72,6 +72,7 @@ const SortableFolderCard: React.FC<{
   onEdit: (folder: FolderItem) => void;
   searchQuery?: string;
   highlightText?: (text: string, query: string) => React.ReactNode;
+  onVisit?: (bookmark: BookmarkItem) => void;
 }> = ({
   folder,
   onDelete,
@@ -80,7 +81,13 @@ const SortableFolderCard: React.FC<{
   onEdit,
   searchQuery,
   highlightText,
+  onVisit,
 }) => {
+  // 仅用于预览排序的本地计数解析，避免作用域问题
+  const localGetVisitCount = (title: string): number => {
+    const m = title.match(/\((\d+)\)\s*$/);
+    return m ? parseInt(m[1], 10) : 0;
+  };
   const {
     attributes,
     listeners,
@@ -94,6 +101,33 @@ const SortableFolderCard: React.FC<{
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+  };
+
+  // 预览区域本地状态：带访问次数并按次数降序
+  const [previewChildren, setPreviewChildren] = useState<BookmarkItem[]>([]);
+  useEffect(() => {
+    const arr = (folder.children || [])
+      .map((b) => ({ ...b, visitCount: b.visitCount ?? localGetVisitCount(b.title) }))
+      .sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
+    setPreviewChildren(arr);
+  }, [folder.children]);
+
+  // 本地处理访问：等待外部 onVisit 完成后，更新本地 state 并重排
+  const handleLocalVisit = async (b: BookmarkItem) => {
+    if (onVisit) {
+      try {
+        await onVisit(b);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setPreviewChildren((prev) => {
+      const updated = prev.map((item) =>
+        item.id === b.id ? { ...item, visitCount: (item.visitCount || 0) + 1 } : item
+      );
+      updated.sort((a, b2) => (b2.visitCount || 0) - (a.visitCount || 0));
+      return [...updated];
+    });
   };
 
   // 只使用列表视图
@@ -191,10 +225,10 @@ const SortableFolderCard: React.FC<{
           )}
 
           {/* 显示所有书签预览 */}
-          {folder.children.length > 0 && (
+          {previewChildren.length > 0 && (
             <div className="space-y-2">
               <div className="text-sm font-medium text-gray-600 mb-2">书签</div>
-              {folder.children.map((bookmark) => (
+              {previewChildren.map((bookmark) => (
                 <div
                   key={bookmark.id}
                   className={`flex items-center gap-3 p-3 rounded-lg transition-colors group ${
@@ -223,13 +257,22 @@ const SortableFolderCard: React.FC<{
                     }}
                   />
                   <div className="flex-1 min-w-0">
-                    <div
-                      className="text-sm text-gray-700 truncate cursor-pointer hover:text-blue-600 font-medium"
-                      onClick={() => window.open(bookmark.url, "_blank")}
-                    >
-                      {searchQuery && highlightText
-                        ? highlightText!(bookmark.title, searchQuery!)
-                        : bookmark.title}
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="text-sm text-gray-700 truncate cursor-pointer hover:text-blue-600 font-medium"
+                        onClick={() => {
+                          // 先打开链接，避免被浏览器拦截；随后异步等待 onVisit 并本地重排
+                          window.open(bookmark.url, "_blank");
+                          void handleLocalVisit(bookmark);
+                        }}
+                      >
+                        {searchQuery && highlightText
+                          ? highlightText!(bookmark.title, searchQuery!)
+                          : bookmark.title}
+                      </div>
+                      <span className="ml-1 inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] leading-4 px-1.5 py-0.5 min-w-[18px] h-4">
+                        {bookmark.visitCount || 0}
+                      </span>
                     </div>
                     {bookmark.tags.length > 0 && (
                       <div className="flex gap-1 mt-1 flex-wrap">
@@ -243,6 +286,18 @@ const SortableFolderCard: React.FC<{
                       </div>
                     )}
                   </div>
+                  {/* 快速访问按钮：在文件夹卡片中直接对该书签计数并打开 */}
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<PlusOutlined />}
+                    className="text-blue-600 hover:text-blue-800 opacity-0 group-hover:opacity-100"
+                    onClick={() => {
+                      window.open(bookmark.url, "_blank");
+                      void handleLocalVisit(bookmark);
+                    }}
+                    title="访问并计数"
+                  />
                   <Popconfirm
                     title="确定删除这个书签吗？"
                     onConfirm={() => onBookmarkDelete(bookmark.id)}
@@ -491,6 +546,11 @@ const MainPage: React.FC = () => {
   const [editBookmarkTitle, setEditBookmarkTitle] = useState("");
   const [editBookmarkUrl, setEditBookmarkUrl] = useState("");
   const [editBookmarkTags, setEditBookmarkTags] = useState<string>("");
+  
+  // 持久化面包屑：本地存储 key 与恢复标记
+  const SELECTED_FOLDER_ID_KEY = "sb_selectedFolderId";
+  const FOLDER_PATH_IDS_KEY = "sb_folderPathIds";
+  const restoredRef = React.useRef(false);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -501,6 +561,25 @@ const MainPage: React.FC = () => {
   useEffect(() => {
     loadBookmarks();
   }, []);
+
+  // 当选中的文件夹或路径变化时，持久化到 localStorage
+  useEffect(() => {
+    try {
+      if (selectedFolder) {
+        localStorage.setItem(SELECTED_FOLDER_ID_KEY, selectedFolder.id);
+      } else {
+        localStorage.removeItem(SELECTED_FOLDER_ID_KEY);
+      }
+      const pathIds = folderPath.map((f) => f.id);
+      if (pathIds.length) {
+        localStorage.setItem(FOLDER_PATH_IDS_KEY, JSON.stringify(pathIds));
+      } else {
+        localStorage.removeItem(FOLDER_PATH_IDS_KEY);
+      }
+    } catch (e) {
+      // 忽略持久化异常（如隐私模式限制）
+    }
+  }, [selectedFolder, folderPath]);
 
   const parseBookmarkTitle = (title: string) => {
     const keywordMatch = title.match(/^(.+?)\s*#(.+)$/);
@@ -825,6 +904,55 @@ const MainPage: React.FC = () => {
     }
     return null;
   };
+
+  // 首次加载完成后，尝试从本地恢复面包屑状态（仅一次）
+  useEffect(() => {
+    if (restoredRef.current) return;
+    if (!folders || folders.length === 0) return;
+    try {
+      const savedId = localStorage.getItem(SELECTED_FOLDER_ID_KEY) || "";
+      const savedPathJson = localStorage.getItem(FOLDER_PATH_IDS_KEY);
+
+      let restoredPath: FolderItem[] = [];
+      if (savedPathJson) {
+        try {
+          const ids = JSON.parse(savedPathJson) as string[];
+          restoredPath = ids
+            .map((fid) => findFolderById(folders, fid))
+            .filter(Boolean) as FolderItem[];
+        } catch {
+          // ignore
+        }
+      }
+
+      if (savedId) {
+        const target = findFolderById(folders, savedId);
+        if (target) {
+          setSelectedFolder(target);
+          if (restoredPath.length) {
+            setFolderPath(restoredPath);
+          } else {
+            // 若没有完整路径，则基于 parentId 反推
+            const chain: FolderItem[] = [];
+            let cur: FolderItem | null = target;
+            while (cur) {
+              chain.unshift(cur);
+              cur = cur.parentId ? findFolderById(folders, cur.parentId) : null;
+            }
+            setFolderPath(chain);
+          }
+        } else if (restoredPath.length) {
+          setSelectedFolder(restoredPath[restoredPath.length - 1]);
+          setFolderPath(restoredPath);
+        }
+      } else if (restoredPath.length) {
+        setSelectedFolder(restoredPath[restoredPath.length - 1]);
+        setFolderPath(restoredPath);
+      }
+    } finally {
+      restoredRef.current = true;
+    }
+  }, [folders]);
 
   // 按访问次数对文件夹内书签降序排序，并通过 chrome.bookmarks.move 同步
   const resortFolderByVisitCount = async (folderId: string) => {
@@ -1255,6 +1383,7 @@ const MainPage: React.FC = () => {
                             onEdit={openEditFolder}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
+                            onVisit={handleBookmarkVisit}
                           />
                         ))}
                       </div>
@@ -1419,6 +1548,7 @@ const MainPage: React.FC = () => {
                             onEdit={openEditFolder}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
+                            onVisit={handleBookmarkVisit}
                           />
                         ))}
                       </div>
@@ -1551,3 +1681,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <MainPage />
   </React.StrictMode>
 );
+
+// ... existing code ...
