@@ -50,6 +50,7 @@ interface BookmarkItem {
   category: string;
   parentId?: string;
   dateAdded?: number;
+  visitCount?: number;
 }
 
 interface FolderItem {
@@ -270,9 +271,10 @@ const SortableBookmarkCard: React.FC<{
   bookmark: BookmarkItem;
   onDelete: (id: string) => void;
   onEdit: (bookmark: BookmarkItem) => void;
+  onVisit: (bookmark: BookmarkItem) => void;
   searchQuery?: string;
   highlightText?: (text: string, query: string) => React.ReactNode;
-}> = ({ bookmark, onDelete, onEdit, searchQuery, highlightText }) => {
+}> = ({ bookmark, onDelete, onEdit, onVisit, searchQuery, highlightText }) => {
   const {
     attributes,
     listeners,
@@ -289,8 +291,17 @@ const SortableBookmarkCard: React.FC<{
   };
 
   const handleClick = () => {
+    onVisit(bookmark);
     window.open(bookmark.url, "_blank");
   };
+
+  // 统一渲染标题：根据当前计数与标签拼接（仅用于显示，不写回）
+  const m = bookmark.title.match(/\((\d+)\)\s*$/);
+  const displayCount = (bookmark.visitCount ?? (m ? parseInt(m[1], 10) : 0)) || 0;
+  const baseTitle = bookmark.title.replace(/\s*\(\d+\)\s*$/, "");
+  const displayTitle = `${baseTitle}${displayCount > 0 ? ` (${displayCount})` : ""}${
+    bookmark.tags && bookmark.tags.length ? ` #${bookmark.tags.slice(0, 5).join(", ")}` : ""
+  }`;
 
   // 只使用列表视图
   if (false) {
@@ -397,8 +408,8 @@ const SortableBookmarkCard: React.FC<{
               >
                 <div className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors duration-200 leading-tight">
                   {searchQuery && highlightText
-                    ? highlightText(bookmark.title, searchQuery)
-                    : bookmark.title}
+                    ? highlightText(displayTitle, searchQuery)
+                    : displayTitle}
                 </div>
                 <div className="text-sm text-gray-500 truncate mt-1 group-hover:text-gray-600 transition-colors">
                   {searchQuery && highlightText
@@ -504,6 +515,24 @@ const MainPage: React.FC = () => {
     return { title, keywords: [] };
   };
 
+  // 访问计数解析/构建辅助
+  const getVisitCountFromTitle = (title: string): number => {
+    const m = title.match(/\((\d+)\)\s*$/);
+    return m ? parseInt(m[1], 10) : 0;
+  };
+  const stripVisitCount = (title: string): string => {
+    return title.replace(/\s*\(\d+\)\s*$/, "");
+  };
+  const buildTitleWithCountAndTags = (
+    baseTitle: string,
+    count: number,
+    tags: string[]
+  ): string => {
+    const countStr = count > 0 ? ` (${count})` : "";
+    const tagsStr = tags && tags.length ? ` #${tags.slice(0, 5).join(", ")}` : "";
+    return `${baseTitle.trim()}${countStr}${tagsStr}`;
+  };
+
   const loadBookmarks = async () => {
     setLoading(true);
     try {
@@ -551,6 +580,7 @@ const MainPage: React.FC = () => {
                 category: child.title,
                 parentId: child.id,
                 dateAdded: grandChild.dateAdded,
+                visitCount: getVisitCountFromTitle(title),
               });
             } else if (grandChild.children) {
               // 这是一个子文件夹，递归处理
@@ -574,6 +604,7 @@ const MainPage: React.FC = () => {
                     category: grandChild.title,
                     parentId: grandChild.id,
                     dateAdded: greatGrandChild.dateAdded,
+                    visitCount: getVisitCountFromTitle(title),
                   });
                 } else if (greatGrandChild.children) {
                   // 递归处理更深层的文件夹
@@ -596,6 +627,7 @@ const MainPage: React.FC = () => {
                         category: greatGrandChild.title,
                         parentId: greatGrandChild.id,
                         dateAdded: deepChild.dateAdded,
+                        visitCount: getVisitCountFromTitle(title),
                       });
                     } else if (deepChild.children) {
                       // 对于更深层的嵌套，使用递归
@@ -732,7 +764,7 @@ const MainPage: React.FC = () => {
   // 打开/提交 编辑书签
   const openEditBookmark = (bookmark: BookmarkItem) => {
     setEditingBookmark(bookmark);
-    setEditBookmarkTitle(bookmark.title);
+    setEditBookmarkTitle(stripVisitCount(bookmark.title));
     setEditBookmarkUrl(bookmark.url);
     setEditBookmarkTags(bookmark.tags?.join(", ") || "");
     setShowEditBookmarkModal(true);
@@ -748,9 +780,8 @@ const MainPage: React.FC = () => {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean);
-      const newTitle = tags.length > 0
-        ? `${editBookmarkTitle.trim()} #${tags.slice(0, 5).join(", ")}`
-        : editBookmarkTitle.trim();
+      const preservedCount = editingBookmark.visitCount ?? getVisitCountFromTitle(editingBookmark.title);
+      const newTitle = buildTitleWithCountAndTags(editBookmarkTitle.trim(), preservedCount, tags);
       await chrome.bookmarks.update(editingBookmark.id, {
         title: newTitle,
         url: editBookmarkUrl.trim(),
@@ -763,6 +794,58 @@ const MainPage: React.FC = () => {
       console.error(e);
       message.error("更新失败");
     }
+  };
+
+  // 访问一个书签：计数+1，更新标题，并按计数重排所在文件夹
+  const handleBookmarkVisit = async (bookmark: BookmarkItem) => {
+    try {
+      const base = stripVisitCount(bookmark.title);
+      const currentCount = bookmark.visitCount ?? getVisitCountFromTitle(bookmark.title) ?? 0;
+      const newCount = currentCount + 1;
+      const newTitle = buildTitleWithCountAndTags(base, newCount, bookmark.tags || []);
+      await chrome.bookmarks.update(bookmark.id, { title: newTitle });
+      // 重新加载以拿到最新计数
+      await loadBookmarks();
+      // 根据计数对所在文件夹重排并同步浏览器
+      if (bookmark.parentId) {
+        await resortFolderByVisitCount(bookmark.parentId);
+      }
+    } catch (error) {
+      console.error("更新访问次数失败:", error);
+      message.error("更新访问次数失败");
+    }
+  };
+
+  // 工具：根据 ID 在树中查找文件夹
+  const findFolderById = (list: FolderItem[], id: string): FolderItem | null => {
+    for (const f of list) {
+      if (f.id === id) return f;
+      const found = findFolderById(f.childFolders, id);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  // 按访问次数对文件夹内书签降序排序，并通过 chrome.bookmarks.move 同步
+  const resortFolderByVisitCount = async (folderId: string) => {
+    const folder = selectedFolder?.id === folderId ? selectedFolder : findFolderById(folders, folderId);
+    if (!folder) return;
+    const withCounts = folder.children.map((b) => ({
+      ...b,
+      visitCount: b.visitCount ?? getVisitCountFromTitle(b.title),
+    }));
+    const sorted = [...withCounts].sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
+    // 使书签整体位于子文件夹之后
+    const baseIndex = folder.childFolders.length;
+    for (let i = 0; i < sorted.length; i++) {
+      const item = sorted[i];
+      try {
+        await chrome.bookmarks.move(item.id, { parentId: folderId, index: baseIndex + i });
+      } catch (e) {
+        console.error("重排书签失败", e);
+      }
+    }
+    await loadBookmarks();
   };
 
   const handleNavigateToFolder = (index: number) => {
@@ -939,16 +1022,27 @@ const MainPage: React.FC = () => {
   };
 
   const getFilteredBookmarks = () => {
-    if (!selectedFolder || !searchQuery) return selectedFolder?.children || [];
+    if (!selectedFolder) return [];
 
-    return selectedFolder.children.filter(
-      (bookmark) =>
-        bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.tags.some((tag) =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
+    const baseList = selectedFolder.children;
+
+    const filtered = searchQuery
+      ? baseList.filter(
+          (bookmark) =>
+            bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            bookmark.tags.some((tag) =>
+              tag.toLowerCase().includes(searchQuery.toLowerCase())
+            )
         )
-    );
+      : baseList;
+
+    return filtered
+      .map((b) => ({
+        ...b,
+        visitCount: b.visitCount ?? getVisitCountFromTitle(b.title),
+      }))
+      .sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
   };
 
   const getFilteredSubFolders = () => {
@@ -1003,14 +1097,17 @@ const MainPage: React.FC = () => {
       });
     }
 
-    return allBookmarks.filter(
-      (bookmark) =>
-        bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bookmark.tags.some((tag) =>
-          tag.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    );
+    return allBookmarks
+      .filter(
+        (bookmark) =>
+          bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          bookmark.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          bookmark.tags.some((tag) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      )
+      .map((b) => ({ ...b, visitCount: b.visitCount ?? getVisitCountFromTitle(b.title) }))
+      .sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
   };
 
   return (
@@ -1208,6 +1305,7 @@ const MainPage: React.FC = () => {
                             bookmark={bookmark}
                             onDelete={handleDeleteBookmark}
                             onEdit={openEditBookmark}
+                            onVisit={handleBookmarkVisit}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
                           />
@@ -1287,6 +1385,7 @@ const MainPage: React.FC = () => {
                             bookmark={bookmark}
                             onDelete={handleDeleteBookmark}
                             onEdit={openEditBookmark}
+                            onVisit={handleBookmarkVisit}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
                           />
