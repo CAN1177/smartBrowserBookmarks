@@ -9,6 +9,7 @@ import {
   Space,
   Popconfirm,
   message,
+  Modal,
 } from "antd";
 import {
   DeleteOutlined,
@@ -17,6 +18,8 @@ import {
   GlobalOutlined,
   DragOutlined,
   FolderOutlined,
+  EditOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
 import {
   DndContext,
@@ -65,6 +68,7 @@ const SortableFolderCard: React.FC<{
   onDelete: (id: string) => void;
   onBookmarkDelete: (id: string) => void;
   onFolderClick: (folder: FolderItem) => void;
+  onEdit: (folder: FolderItem) => void;
   searchQuery?: string;
   highlightText?: (text: string, query: string) => React.ReactNode;
 }> = ({
@@ -72,6 +76,7 @@ const SortableFolderCard: React.FC<{
   onDelete,
   onBookmarkDelete,
   onFolderClick,
+  onEdit,
   searchQuery,
   highlightText,
 }) => {
@@ -127,6 +132,13 @@ const SortableFolderCard: React.FC<{
               >
                 <DragOutlined className="text-gray-500 text-lg" />
               </div>
+              <Button
+                type="text"
+                size="large"
+                icon={<EditOutlined />}
+                onClick={() => onEdit(folder)}
+                className="hover:bg-gray-100 rounded-2xl transition-all duration-300 hover:shadow-lg border border-gray-200/50"
+              />
               <Popconfirm
                 title="确定删除这个文件夹吗？"
                 onConfirm={() => onDelete(folder.id)}
@@ -257,9 +269,10 @@ const SortableFolderCard: React.FC<{
 const SortableBookmarkCard: React.FC<{
   bookmark: BookmarkItem;
   onDelete: (id: string) => void;
+  onEdit: (bookmark: BookmarkItem) => void;
   searchQuery?: string;
   highlightText?: (text: string, query: string) => React.ReactNode;
-}> = ({ bookmark, onDelete, searchQuery, highlightText }) => {
+}> = ({ bookmark, onDelete, onEdit, searchQuery, highlightText }) => {
   const {
     attributes,
     listeners,
@@ -421,6 +434,13 @@ const SortableBookmarkCard: React.FC<{
                 >
                   <DragOutlined className="text-gray-400 text-lg" />
                 </div>
+                <Button
+                  type="text"
+                  size="large"
+                  icon={<EditOutlined />}
+                  onClick={() => onEdit(bookmark)}
+                  className="hover:bg-gray-100/80 backdrop-blur-sm rounded-xl transition-all duration-200 hover:shadow-md border border-gray-200/50"
+                />
                 <Popconfirm
                   title="确定删除这个书签吗？"
                   onConfirm={() => onDelete(bookmark.id)}
@@ -449,7 +469,17 @@ const MainPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<FolderItem | null>(null);
   const [folderPath, setFolderPath] = useState<FolderItem[]>([]);
-
+  // 新建/编辑状态
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [showEditFolderModal, setShowEditFolderModal] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<FolderItem | null>(null);
+  const [editFolderName, setEditFolderName] = useState("");
+  const [showEditBookmarkModal, setShowEditBookmarkModal] = useState(false);
+  const [editingBookmark, setEditingBookmark] = useState<BookmarkItem | null>(null);
+  const [editBookmarkTitle, setEditBookmarkTitle] = useState("");
+  const [editBookmarkUrl, setEditBookmarkUrl] = useState("");
+  const [editBookmarkTags, setEditBookmarkTags] = useState<string>("");
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -649,6 +679,89 @@ const MainPage: React.FC = () => {
     } else {
       // 如果文件夹不在路径中，添加到路径末尾
       setFolderPath((prev) => [...prev, folder]);
+    }
+  };
+
+  // 打开/提交 新建文件夹
+  const openCreateFolder = () => {
+    setNewFolderName("");
+    setShowCreateFolderModal(true);
+  };
+  const submitCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      message.warning("请输入文件夹名称");
+      return;
+    }
+    try {
+      const parentId = selectedFolder?.id || "1"; // 默认创建到书签栏
+      await chrome.bookmarks.create({ title: newFolderName.trim(), parentId });
+      message.success("文件夹创建成功！");
+      setShowCreateFolderModal(false);
+      setNewFolderName("");
+      await loadBookmarks();
+    } catch (e) {
+      console.error(e);
+      message.error("创建文件夹失败");
+    }
+  };
+
+  // 打开/提交 编辑文件夹
+  const openEditFolder = (folder: FolderItem) => {
+    setEditingFolder(folder);
+    setEditFolderName(folder.title);
+    setShowEditFolderModal(true);
+  };
+  const submitEditFolder = async () => {
+    if (!editingFolder) return;
+    if (!editFolderName.trim()) {
+      message.warning("请输入文件夹名称");
+      return;
+    }
+    try {
+      await chrome.bookmarks.update(editingFolder.id, { title: editFolderName.trim() });
+      message.success("文件夹已重命名");
+      setShowEditFolderModal(false);
+      setEditingFolder(null);
+      await loadBookmarks();
+    } catch (e) {
+      console.error(e);
+      message.error("重命名失败");
+    }
+  };
+
+  // 打开/提交 编辑书签
+  const openEditBookmark = (bookmark: BookmarkItem) => {
+    setEditingBookmark(bookmark);
+    setEditBookmarkTitle(bookmark.title);
+    setEditBookmarkUrl(bookmark.url);
+    setEditBookmarkTags(bookmark.tags?.join(", ") || "");
+    setShowEditBookmarkModal(true);
+  };
+  const submitEditBookmark = async () => {
+    if (!editingBookmark) return;
+    if (!editBookmarkTitle.trim() || !editBookmarkUrl.trim()) {
+      message.warning("请输入完整的标题和URL");
+      return;
+    }
+    try {
+      const tags = editBookmarkTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const newTitle = tags.length > 0
+        ? `${editBookmarkTitle.trim()} #${tags.slice(0, 5).join(", ")}`
+        : editBookmarkTitle.trim();
+      await chrome.bookmarks.update(editingBookmark.id, {
+        title: newTitle,
+        url: editBookmarkUrl.trim(),
+      });
+      message.success("书签已更新");
+      setShowEditBookmarkModal(false);
+      setEditingBookmark(null);
+      await loadBookmarks();
+    } catch (e) {
+      console.error(e);
+      message.error("更新失败");
     }
   };
 
@@ -928,6 +1041,14 @@ const MainPage: React.FC = () => {
               />
             </div>
             <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openCreateFolder}
+              className="rounded-xl"
+            >
+              新建文件夹
+            </Button>
+            <Button
               type="text"
               icon={<SettingOutlined />}
               onClick={() => chrome.runtime.openOptionsPage()}
@@ -1034,6 +1155,7 @@ const MainPage: React.FC = () => {
                             onDelete={handleFolderDelete}
                             onBookmarkDelete={handleDeleteBookmark}
                             onFolderClick={handleFolderClick}
+                            onEdit={openEditFolder}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
                           />
@@ -1085,6 +1207,7 @@ const MainPage: React.FC = () => {
                             key={bookmark.id}
                             bookmark={bookmark}
                             onDelete={handleDeleteBookmark}
+                            onEdit={openEditBookmark}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
                           />
@@ -1163,6 +1286,7 @@ const MainPage: React.FC = () => {
                             key={bookmark.id}
                             bookmark={bookmark}
                             onDelete={handleDeleteBookmark}
+                            onEdit={openEditBookmark}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
                           />
@@ -1193,6 +1317,7 @@ const MainPage: React.FC = () => {
                             onDelete={handleFolderDelete}
                             onBookmarkDelete={handleDeleteBookmark}
                             onFolderClick={handleFolderClick}
+                            onEdit={openEditFolder}
                             searchQuery={searchQuery}
                             highlightText={highlightText}
                           />
@@ -1253,6 +1378,71 @@ const MainPage: React.FC = () => {
           )}
         </div>
       </Content>
+
+      {/* 新建文件夹 */}
+      <Modal
+        title="新建文件夹"
+        open={showCreateFolderModal}
+        onOk={submitCreateFolder}
+        onCancel={() => setShowCreateFolderModal(false)}
+        okText="创建"
+        cancelText="取消"
+      >
+        <div className="space-y-3">
+          <Input
+            placeholder="文件夹名称"
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+          />
+          <div className="text-sm text-gray-500">
+            将创建在：{selectedFolder ? selectedFolder.title : "书签栏"}
+          </div>
+        </div>
+      </Modal>
+
+      {/* 编辑文件夹 */}
+      <Modal
+        title="重命名文件夹"
+        open={showEditFolderModal}
+        onOk={submitEditFolder}
+        onCancel={() => setShowEditFolderModal(false)}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Input
+          placeholder="文件夹名称"
+          value={editFolderName}
+          onChange={(e) => setEditFolderName(e.target.value)}
+        />
+      </Modal>
+
+      {/* 编辑书签 */}
+      <Modal
+        title="编辑书签"
+        open={showEditBookmarkModal}
+        onOk={submitEditBookmark}
+        onCancel={() => setShowEditBookmarkModal(false)}
+        okText="保存"
+        cancelText="取消"
+      >
+        <div className="space-y-3">
+          <Input
+            placeholder="标题"
+            value={editBookmarkTitle}
+            onChange={(e) => setEditBookmarkTitle(e.target.value)}
+          />
+          <Input
+            placeholder="URL"
+            value={editBookmarkUrl}
+            onChange={(e) => setEditBookmarkUrl(e.target.value)}
+          />
+          <Input
+            placeholder="标签（逗号分隔，可选）"
+            value={editBookmarkTags}
+            onChange={(e) => setEditBookmarkTags(e.target.value)}
+          />
+        </div>
+      </Modal>
     </Layout>
   );
 };
