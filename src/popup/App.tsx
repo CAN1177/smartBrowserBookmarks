@@ -407,6 +407,7 @@ const App: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="rounded-lg"
+              autoFocus
             />
           </div>
 
