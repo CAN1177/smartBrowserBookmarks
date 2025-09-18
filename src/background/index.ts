@@ -228,6 +228,23 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         });
       return true;
 
+    case "moveBookmark":
+      // 移动书签或文件夹
+      chrome.bookmarks
+        .move(String(request.id), {
+          parentId: String(request.parentId),
+          index:
+            typeof request.index === "number" ? Number(request.index) : undefined,
+        })
+        .then((result) => {
+          sendResponse({ success: true, data: result });
+        })
+        .catch((error) => {
+          console.error("移动书签失败:", error);
+          sendResponse({ success: false, error: "移动书签失败" });
+        });
+      return true;
+
     default:
       sendResponse({ success: false, error: "未知操作" });
   }

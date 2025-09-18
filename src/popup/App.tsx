@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Layout,
   Input,
@@ -13,6 +13,7 @@ import {
   Form,
   Select,
   Divider,
+  TreeSelect,
 } from "antd";
 import {
   SearchOutlined,
@@ -24,6 +25,7 @@ import {
   GlobalOutlined,
 } from "@ant-design/icons";
 
+const LAST_SELECTED_FOLDER_ID_KEY = "lastSelectedFolderId";
 const { Header, Content } = Layout;
 
 interface BookmarkItem {
@@ -64,11 +66,21 @@ const App: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentPageInfo, setCurrentPageInfo] =
     useState<CurrentPageInfo | null>(null);
-  const [bookmarkFolders, setBookmarkFolders] = useState<
-    { id: string; title: string }[]
-  >([]);
+  // 由 folderTreeData 替代原先的扁平文件夹列表
+  const [folderTreeData, setFolderTreeData] = useState<any[]>([]);
   const [newFolderName, setNewFolderName] = useState("");
   const [form] = Form.useForm();
+  // 仅在 TreeSelect 中展开顶层节点，提高性能
+  const topLevelFolderKeys = useMemo(
+    () => (folderTreeData || []).map((n: any) => n.value ?? n.key),
+    [folderTreeData]
+  );
+  // 浏览页签右键新建文件夹所需状态
+  const [showNewFolderModalBrowse, setShowNewFolderModalBrowse] =
+    useState(false);
+  const [contextFolderId, setContextFolderId] = useState<string | null>(null);
+  const [contextFolderTitle, setContextFolderTitle] = useState<string>("");
+  const [newFolderNameBrowse, setNewFolderNameBrowse] = useState<string>("");
 
   useEffect(() => {
     loadBookmarks();
@@ -86,11 +98,27 @@ const App: React.FC = () => {
         const bookmarkTree = response.data[0];
         const flatBookmarks = flattenBookmarkTree(bookmarkTree);
         const treeNodes = convertToTreeNodes(bookmarkTree);
-        const folders = extractFolders(bookmarkTree);
+        const folderTree = buildFolderTreeSelectData(bookmarkTree);
 
         setBookmarks(flatBookmarks);
         setBookmarkTree(treeNodes.children || []);
-        setBookmarkFolders(folders);
+        // 移除旧的扁平文件夹状态更新
+        setFolderTreeData(folderTree);
+
+        // 记住上次选择的文件夹，若不存在则回退到书签栏
+        const existsInTree = (nodes: any[], value: string): boolean => {
+          for (const n of nodes) {
+            if ((n.value ?? n.key) === value) return true;
+            if (n.children && existsInTree(n.children, value)) return true;
+          }
+          return false;
+        };
+        const lastSaved =
+          localStorage.getItem(LAST_SELECTED_FOLDER_ID_KEY) || "1";
+        const initialFolder = existsInTree(folderTree, lastSaved)
+          ? lastSaved
+          : "1";
+        form.setFieldValue("folder", initialFolder);
       }
     } catch (error) {
       console.error("加载书签失败:", error);
@@ -220,9 +248,18 @@ const App: React.FC = () => {
       // 这是一个文件夹
       const children =
         node.children?.map((child) => convertToTreeNodes(child)) || [];
+      const folderTitle =
+        node.title ||
+        (node.id === "1"
+          ? "书签栏"
+          : node.id === "2"
+          ? "其他书签"
+          : node.id === "3"
+          ? "移动设备书签"
+          : "未命名文件夹");
       return {
         key: node.id,
-        title: node.title || "书签栏",
+        title: folderTitle,
         icon: <FolderOutlined />,
         children: children,
         isLeaf: false,
@@ -271,7 +308,11 @@ const App: React.FC = () => {
         const base = stripVisitCount(parsed.title);
         const currentCount = getVisitCountFromTitle(currentTitle) || 0;
         const newCount = currentCount + 1;
-        const newTitle = buildTitleWithCountAndTags(base, newCount, parsed.keywords || []);
+        const newTitle = buildTitleWithCountAndTags(
+          base,
+          newCount,
+          parsed.keywords || []
+        );
         await chrome.bookmarks.update(id, { title: newTitle });
       }
       await chrome.tabs.create({ url });
@@ -351,7 +392,48 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCreateFolder = async () => {
+  // 仅生成“文件夹”树，供 TreeSelect 使用
+  const convertNodeToTreeSelect = (
+    node: chrome.bookmarks.BookmarkTreeNode
+  ): any | null => {
+    if (node.url) return null; // 仅保留文件夹
+
+    const title =
+      node.title ||
+      (node.id === "0"
+        ? "根目录"
+        : node.id === "1"
+        ? "书签栏"
+        : node.id === "2"
+        ? "其他书签"
+        : node.id === "3"
+        ? "移动设备书签"
+        : "未命名文件夹");
+
+    const children = (node.children || [])
+      .map((child) => convertNodeToTreeSelect(child))
+      .filter(Boolean);
+
+    return {
+      title,
+      value: node.id,
+      key: node.id,
+      children: children as any[],
+    };
+  };
+
+  const buildFolderTreeSelectData = (
+    root: chrome.bookmarks.BookmarkTreeNode
+  ): any[] => {
+    // 跳过根节点（id=0），使用其子节点作为顶层
+    const topLevel = (root.children || [])
+      .filter((n) => !n.url)
+      .map((n) => convertNodeToTreeSelect(n))
+      .filter(Boolean) as any[];
+    return topLevel;
+  };
+
+  const handleCreateFolder = async (parentId?: string) => {
     if (!newFolderName.trim()) {
       message.error("请输入文件夹名称");
       return;
@@ -361,22 +443,119 @@ const App: React.FC = () => {
       const response = await chrome.runtime.sendMessage({
         action: "createFolder",
         title: newFolderName.trim(),
-        parentId: "1", // 在书签栏下创建
+        parentId: parentId || form.getFieldValue("folder") || "1", // 在当前选中节点下创建
       });
 
       if (response.success) {
         message.success("文件夹创建成功！");
+        const createdId = response.data.id;
         setNewFolderName("");
         // 重新加载书签以更新文件夹列表
         loadBookmarks();
-        // 设置新创建的文件夹为选中项
-        form.setFieldValue("folder", response.data.id);
+        // 设置新创建的文件夹为选中项，并记住
+        form.setFieldValue("folder", createdId);
+        localStorage.setItem(LAST_SELECTED_FOLDER_ID_KEY, String(createdId));
       } else {
         message.error("创建文件夹失败");
       }
     } catch (error) {
       console.error("创建文件夹失败:", error);
       message.error("创建文件夹失败");
+    }
+  };
+
+  // 浏览页签：右键在某个文件夹下新建
+  const handleTreeRightClick = (info: any) => {
+    const node = info.node as TreeNode & { title: string };
+    if (!node.isLeaf) {
+      setContextFolderId(String(node.key));
+      setContextFolderTitle(String(node.title));
+      setShowNewFolderModalBrowse(true);
+    }
+  };
+
+  const handleConfirmCreateFolderInBrowse = async () => {
+    if (!newFolderNameBrowse.trim() || !contextFolderId) {
+      message.error("请输入文件夹名称");
+      return;
+    }
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: "createFolder",
+        title: newFolderNameBrowse.trim(),
+        parentId: contextFolderId,
+      });
+      if (response.success) {
+        message.success("文件夹创建成功！");
+        setShowNewFolderModalBrowse(false);
+        setNewFolderNameBrowse("");
+        // 刷新树
+        loadBookmarks();
+      } else {
+        message.error("创建文件夹失败");
+      }
+    } catch (e) {
+      console.error(e);
+      message.error("创建文件夹失败");
+    }
+  };
+
+  // 浏览页签：拖拽移动书签/文件夹
+  const findTreeNode = (nodes: TreeNode[], key: string): TreeNode | null => {
+    for (const n of nodes) {
+      if (n.key === key) return n;
+      if (n.children) {
+        const found = findTreeNode(n.children, key);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const collectDescendantKeys = (node: TreeNode | null, acc: Set<string>) => {
+    if (!node) return;
+    for (const c of node.children || []) {
+      acc.add(c.key);
+      collectDescendantKeys(c, acc);
+    }
+  };
+
+  const isDescendantKey = (ancestorKey: string, targetKey: string): boolean => {
+    const ancestor = findTreeNode(bookmarkTree, ancestorKey);
+    const acc = new Set<string>();
+    collectDescendantKeys(ancestor, acc);
+    return acc.has(targetKey);
+  };
+
+  const allowTreeDrop = ({ dropNode, dropPosition }: any) => {
+    // 仅允许"放到节点内部"且目标是文件夹
+    return dropPosition === 0 && dropNode && dropNode.isLeaf === false;
+  };
+
+  const handleTreeDrop = async (info: any) => {
+    if (info.dropToGap) return; // 不处理间隙放置
+    const dragKey = String(info.dragNode.key);
+    const targetKey = String(info.node.key);
+    if (dragKey === targetKey) return;
+    if (isDescendantKey(dragKey, targetKey)) {
+      message.error("不能移动到自己的子节点下");
+      return;
+    }
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: "moveBookmark",
+        id: dragKey,
+        parentId: targetKey,
+      });
+      if (response.success) {
+        message.success("移动成功");
+        loadBookmarks();
+      } else {
+        message.error("移动失败");
+      }
+    } catch (e) {
+      console.error(e);
+      message.error("移动失败");
     }
   };
 
@@ -493,6 +672,10 @@ const App: React.FC = () => {
                 showIcon
                 defaultExpandAll={false}
                 className="bg-white rounded-lg p-2"
+                draggable
+                allowDrop={allowTreeDrop}
+                onDrop={handleTreeDrop}
+                onRightClick={handleTreeRightClick}
               />
             ) : (
               <div className="text-center py-8 text-gray-500">暂无书签</div>
@@ -593,15 +776,26 @@ const App: React.FC = () => {
             </Form.Item>
 
             <Form.Item name="folder" label="保存到文件夹">
-              <Select
+              <TreeSelect
                 placeholder="选择文件夹"
-                defaultValue="1"
+                value={form.getFieldValue("folder") || "1"}
+                treeData={folderTreeData}
+                onChange={(value) => {
+                  form.setFieldValue("folder", value);
+                  localStorage.setItem(
+                    LAST_SELECTED_FOLDER_ID_KEY,
+                    String(value)
+                  );
+                }}
                 showSearch
-                filterOption={(input, option) =>
-                  String(option?.children || "")
+                treeNodeFilterProp="title"
+                filterTreeNode={(input, node) =>
+                  String(node?.title || "")
                     .toLowerCase()
-                    .includes(input.toLowerCase())
+                    .includes(String(input).toLowerCase())
                 }
+                treeDefaultExpandedKeys={topLevelFolderKeys}
+                style={{ width: "100%" }}
                 dropdownRender={(menu) => (
                   <>
                     {menu}
@@ -611,28 +805,28 @@ const App: React.FC = () => {
                         placeholder="新文件夹名称"
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
-                        onPressEnter={handleCreateFolder}
+                        onPressEnter={() =>
+                          handleCreateFolder(
+                            form.getFieldValue("folder") || "1"
+                          )
+                        }
                         style={{ width: "200px" }}
                       />
                       <Button
                         type="text"
                         icon={<PlusOutlined />}
-                        onClick={handleCreateFolder}
+                        onClick={() =>
+                          handleCreateFolder(
+                            form.getFieldValue("folder") || "1"
+                          )
+                        }
                       >
                         创建
                       </Button>
                     </Space>
                   </>
                 )}
-              >
-                {bookmarkFolders
-                  .filter((folder) => folder.id !== "0") // 过滤掉根目录
-                  .map((folder) => (
-                    <Select.Option key={folder.id} value={folder.id}>
-                      {folder.title}
-                    </Select.Option>
-                  ))}
-              </Select>
+              />
             </Form.Item>
 
             <Form.Item name="keywords" label="关键词">
@@ -679,6 +873,30 @@ const App: React.FC = () => {
                 </div>
               )}
           </Form>
+        </Modal>
+
+        {/* 浏览页签：右键新建文件夹弹窗 */}
+        <Modal
+          title={
+            contextFolderTitle
+              ? `在「${contextFolderTitle}」中创建文件夹`
+              : "新建文件夹"
+          }
+          open={showNewFolderModalBrowse}
+          onCancel={() => {
+            setShowNewFolderModalBrowse(false);
+            setNewFolderNameBrowse("");
+          }}
+          onOk={handleConfirmCreateFolderInBrowse}
+          okText="创建"
+          cancelText="取消"
+        >
+          <Input
+            placeholder="新文件夹名称"
+            value={newFolderNameBrowse}
+            onChange={(e) => setNewFolderNameBrowse(e.target.value)}
+            onPressEnter={handleConfirmCreateFolderInBrowse}
+          />
         </Modal>
       </Content>
     </Layout>
