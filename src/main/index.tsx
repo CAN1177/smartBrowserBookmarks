@@ -564,6 +564,8 @@ const MainPage: React.FC = () => {
 
   // 当选中的文件夹或路径变化时，持久化到 localStorage
   useEffect(() => {
+    // 避免在首次加载且尚未从本地恢复之前，把初始空状态写回导致清空已保存位置
+    if (!restoredRef.current) return;
     try {
       if (selectedFolder) {
         localStorage.setItem(SELECTED_FOLDER_ID_KEY, selectedFolder.id);
