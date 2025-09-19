@@ -82,9 +82,122 @@ const App: React.FC = () => {
   const [contextFolderTitle, setContextFolderTitle] = useState<string>("");
   const [newFolderNameBrowse, setNewFolderNameBrowse] = useState<string>("");
 
+  // Dify 设置与状态
+  const [useDifyKeyword, setUseDifyKeyword] = useState<boolean>(false);
+  const [difyApiKey, setDifyApiKey] = useState<string>("");
+  const [difyBaseUrl, setDifyBaseUrl] = useState<string>("https://api.dify.ai");
+  const [difyUserId, setDifyUserId] = useState<string>("sb-extension");
+  const [difyLoading, setDifyLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    // 读取设置（在非扩展环境下忽略，便于预览）
+    const anyWindow = globalThis as any;
+    if (!anyWindow?.chrome?.storage?.sync) return;
+    chrome.storage.sync
+      .get({
+        useDifyKeyword: false,
+        difyApiKey: "",
+        difyBaseUrl: "https://api.dify.ai",
+        difyUserId: "sb-extension",
+      })
+      .then(({ useDifyKeyword, difyApiKey, difyBaseUrl, difyUserId }) => {
+        setUseDifyKeyword(!!useDifyKeyword);
+        setDifyApiKey(difyApiKey || "");
+        setDifyBaseUrl(difyBaseUrl || "https://api.dify.ai");
+        setDifyUserId(difyUserId || "sb-extension");
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     loadBookmarks();
   }, []);
+
+  // 使用 Dify 生成关键词
+  const generateKeywordsWithDify = async () => {
+    try {
+      if (!useDifyKeyword) {
+        message.info("已关闭 Dify 生成关键词，可在设置中开启");
+        return;
+      }
+      if (!difyApiKey) {
+        message.warning("请先在设置中配置 Dify API Key");
+        return;
+      }
+
+      const formTitle = form.getFieldValue("title");
+      const formUrl = form.getFieldValue("url");
+      const formDesc = form.getFieldValue("description");
+
+      const payloadInputs: any = {
+        url: formUrl || currentPageInfo?.url,
+        title: formTitle || currentPageInfo?.title,
+        description: formDesc || currentPageInfo?.description,
+        content: currentPageInfo?.content,
+      };
+
+      setDifyLoading(true);
+      const base = (difyBaseUrl || "https://api.dify.ai").replace(/\/$/, "");
+      const resp = await fetch(`${base}/v1/workflows/run`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${difyApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: payloadInputs,
+          response_mode: "blocking",
+          user: difyUserId || "sb-extension",
+        }),
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`调用失败(${resp.status}): ${text}`);
+      }
+      const data: any = await resp.json();
+
+      // 兼容多种返回结构，尽力抽取关键词
+      let kws: string[] = [];
+      const tryExtract = (v: any) => {
+        if (!v) return [] as string[];
+        if (Array.isArray(v)) return v.map(String);
+        if (typeof v === "string") {
+          return v
+            .split(/[#,，、\n\r\t ]+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+        if (typeof v === "object") {
+          // 遍历对象字段寻找 keywords 或 text
+          if (v.keywords) return tryExtract(v.keywords);
+          if (v.text) return tryExtract(v.text);
+        }
+        return [] as string[];
+      };
+
+      kws = [
+        ...tryExtract(data?.data?.outputs?.keywords),
+        ...tryExtract(data?.data?.text),
+        ...tryExtract(data?.outputs?.keywords),
+        ...tryExtract(data?.text),
+      ];
+
+      // 去重合并到表单
+      const existing: string[] = form.getFieldValue("keywords") || [];
+      const merged = Array.from(new Set([...existing, ...kws])).filter(Boolean);
+      if (merged.length === 0) {
+        message.info("未从 Dify 获取到有效关键词");
+      }
+      form.setFieldValue("keywords", merged);
+      message.success("已生成关键词");
+    } catch (e: any) {
+      console.error(e);
+      message.error(e?.message || "生成关键词失败");
+    } finally {
+      setDifyLoading(false);
+    }
+  };
 
   const loadBookmarks = async () => {
     setLoading(true);
@@ -707,15 +820,12 @@ const App: React.FC = () => {
             >
               主界面
             </Button>
-            {/* <Button
+            <Button
               type="text"
-              icon={<ImportOutlined />}
-              onClick={handleImportBookmarks}
+              icon={<SettingOutlined />}
               size="small"
+              onClick={() => chrome.runtime.openOptionsPage?.()}
             >
-              导入
-            </Button> */}
-            <Button type="text" icon={<SettingOutlined />} size="small">
               设置
             </Button>
           </Space>
@@ -839,14 +949,31 @@ const App: React.FC = () => {
                 onChange={(value) => form.setFieldValue("keywords", value)}
               />
             </Form.Item>
+            <div className="-mt-2 mb-3">
+              <Space size="small">
+                <Button
+                  size="small"
+                  onClick={generateKeywordsWithDify}
+                  loading={difyLoading}
+                  disabled={!useDifyKeyword || !difyApiKey}
+                >
+                  用 Dify 生成关键词
+                </Button>
+                {!useDifyKeyword && (
+                  <span className="text-xs text-gray-400">已在设置中关闭</span>
+                )}
+                {useDifyKeyword && !difyApiKey && (
+                  <span className="text-xs text-red-400">未配置 API Key</span>
+                )}
+              </Space>
+            </div>
 
             {currentPageInfo &&
               currentPageInfo.keywords &&
               currentPageInfo.keywords.length > 0 && (
                 <div className="mb-4">
                   <div className="text-sm text-gray-600 mb-2">
-                    自动提取的关键词（共 {currentPageInfo.keywords.length}{" "}
-                    个）：
+                    自动提取的关键词（共 {currentPageInfo.keywords.length} 个）：
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {currentPageInfo.keywords.map((keyword, index) => (
