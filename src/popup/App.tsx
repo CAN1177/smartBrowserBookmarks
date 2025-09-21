@@ -37,6 +37,7 @@ interface BookmarkItem {
   category: string;
   parentId?: string;
   dateAdded?: number;
+  visitCount?: number;
 }
 
 interface TreeNode {
@@ -327,6 +328,8 @@ const App: React.FC = () => {
         }`,
         tags: keywords, // 使用解析出的关键词作为标签
         category: "默认",
+        dateAdded: node.dateAdded,
+        visitCount: getVisitCountFromTitle(node.title),
       });
     }
 
@@ -681,6 +684,28 @@ const App: React.FC = () => {
     );
   });
 
+  const displayList = useMemo(() => {
+    const q = searchQuery.trim();
+    if (q.length > 0) {
+      return filteredBookmarks.slice(0, 10);
+    }
+    const hasAnyCount = bookmarks.some((b) => (b.visitCount || 0) > 0);
+    const base = [...bookmarks];
+    if (hasAnyCount) {
+      return base
+        .sort(
+          (a, b) =>
+            (b.visitCount || 0) - (a.visitCount || 0) ||
+            (b.dateAdded || 0) - (a.dateAdded || 0)
+        )
+        .slice(0, 10);
+    }
+    // 都没有计数时，按最新时间排序
+    return base
+      .sort((a, b) => (b.dateAdded || 0) - (a.dateAdded || 0))
+      .slice(0, 10);
+  }, [bookmarks, filteredBookmarks, searchQuery]);
+
   const tabItems = [
     {
       key: "search",
@@ -703,11 +728,11 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="flex-1 overflow-auto space-y-2 max-h-86">
+          <div className="flex-1 overflow-auto space-y-2 max-h-86 no-scrollbar">
             {loading ? (
               <div className="text-center py-8 text-gray-500">加载中...</div>
-            ) : filteredBookmarks.length > 0 ? (
-              filteredBookmarks.slice(0, 10).map((bookmark) => (
+            ) : displayList.length > 0 ? (
+              displayList.map((bookmark) => (
                 <Card
                   key={bookmark.id}
                   size="small"
@@ -775,7 +800,7 @@ const App: React.FC = () => {
           <div className="text-sm text-gray-600 mb-2">
             点击文件夹展开，点击书签打开链接
           </div>
-          <div className="flex-1 overflow-auto max-h-96">
+          <div className="flex-1 overflow-auto max-h-96 no-scrollbar">
             {loading ? (
               <div className="text-center py-8 text-gray-500">加载中...</div>
             ) : bookmarkTree.length > 0 ? (
@@ -800,7 +825,7 @@ const App: React.FC = () => {
   ];
 
   return (
-    <Layout className="h-full bg-gray-50">
+    <Layout className="h-full bg-gray-50 overflow-hidden">
       <Header className="bg-white shadow-sm px-4 h-14 flex items-center">
         <div className="flex items-center justify-between w-full">
           <h1 className="text-lg font-semibold text-gray-800 m-0">
@@ -832,7 +857,7 @@ const App: React.FC = () => {
         </div>
       </Header>
 
-      <Content className="p-4 flex flex-col">
+      <Content className="p-4 flex flex-col pb-20 overflow-hidden">
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -841,15 +866,17 @@ const App: React.FC = () => {
           className="flex-1"
         />
 
-        <div className="border-t pt-3 mt-4">
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            className="w-full"
-            onClick={getCurrentPageInfo}
-          >
-            添加当前页面
-          </Button>
+        <div className="fixed left-0 right-0 bottom-0 p-3 bg-white border-t shadow-md z-10">
+          <div className="px-4">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              className="w-full"
+              onClick={getCurrentPageInfo}
+            >
+              添加当前页面
+            </Button>
+          </div>
         </div>
 
         <Modal
