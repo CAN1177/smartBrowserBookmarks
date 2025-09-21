@@ -20,6 +20,9 @@ import {
   FolderOutlined,
   EditOutlined,
   PlusOutlined,
+  ArrowUpOutlined,
+  UpOutlined,
+  DownOutlined,
 } from "@ant-design/icons";
 import {
   DndContext,
@@ -530,6 +533,13 @@ const SortableBookmarkCard: React.FC<{
 };
 
 const MainPage: React.FC = () => {
+  // 浮动按钮与侧边锚点：滚动与导航
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const goToSettings = () => chrome.runtime.openOptionsPage();
+  const scrollToFolder = (id: string) => {
+    const el = document.getElementById(`folder-${id}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -547,6 +557,10 @@ const MainPage: React.FC = () => {
   const [editBookmarkUrl, setEditBookmarkUrl] = useState("");
   const [editBookmarkTags, setEditBookmarkTags] = useState<string>("");
   
+  // 目录（侧边锚点）折叠与当前高亮
+  const [tocCollapsed, setTocCollapsed] = useState(false);
+  const [activeAnchorId, setActiveAnchorId] = useState<string | null>(null);
+  
   // 持久化面包屑：本地存储 key 与恢复标记
   const SELECTED_FOLDER_ID_KEY = "sb_selectedFolderId";
   const FOLDER_PATH_IDS_KEY = "sb_folderPathIds";
@@ -561,6 +575,33 @@ const MainPage: React.FC = () => {
   useEffect(() => {
     loadBookmarks();
   }, []);
+
+  // 根据可见区域高亮对应的目录项
+  useEffect(() => {
+    const items = !selectedFolder ? getFilteredFolders() : getFilteredSubFolders();
+    if (!items || items.length === 0) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) {
+          const id = visible[0].target.id.replace("folder-", "");
+          setActiveAnchorId(id);
+        }
+      },
+      { root: null, threshold: 0.6 }
+    );
+
+    items.forEach((f) => {
+      const el = document.getElementById(`folder-${f.id}`);
+      if (el) obs.observe(el);
+    });
+
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFolder, searchQuery, folders]);
 
   // 当选中的文件夹或路径变化时，持久化到 localStorage
   useEffect(() => {
@@ -1287,7 +1328,7 @@ const MainPage: React.FC = () => {
         </div>
       </Header>
 
-      <Content className="max-w-7xl mx-auto p-8 relative width-full">
+      <Content className="max-w-6xl mx-auto p-8 relative width-full">
         {/* 背景装饰元素 */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
@@ -1376,17 +1417,18 @@ const MainPage: React.FC = () => {
                     >
                       <div className="space-y-3">
                         {getFilteredSubFolders().map((subFolder) => (
-                          <SortableFolderCard
-                            key={subFolder.id}
-                            folder={subFolder}
-                            onDelete={handleFolderDelete}
-                            onBookmarkDelete={handleDeleteBookmark}
-                            onFolderClick={handleFolderClick}
-                            onEdit={openEditFolder}
-                            searchQuery={searchQuery}
-                            highlightText={highlightText}
-                            onVisit={handleBookmarkVisit}
-                          />
+                          <div id={`folder-${subFolder.id}`} key={subFolder.id} className="scroll-mt-20">
+                            <SortableFolderCard
+                              folder={subFolder}
+                              onDelete={handleFolderDelete}
+                              onBookmarkDelete={handleDeleteBookmark}
+                              onFolderClick={handleFolderClick}
+                              onEdit={openEditFolder}
+                              searchQuery={searchQuery}
+                              highlightText={highlightText}
+                              onVisit={handleBookmarkVisit}
+                            />
+                          </div>
                         ))}
                       </div>
                     </SortableContext>
@@ -1541,17 +1583,18 @@ const MainPage: React.FC = () => {
                     {getFilteredFolders().length > 0 ? (
                       <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {getFilteredFolders().map((folder) => (
-                          <SortableFolderCard
-                            key={folder.id}
-                            folder={folder}
-                            onDelete={handleFolderDelete}
-                            onBookmarkDelete={handleDeleteBookmark}
-                            onFolderClick={handleFolderClick}
-                            onEdit={openEditFolder}
-                            searchQuery={searchQuery}
-                            highlightText={highlightText}
-                            onVisit={handleBookmarkVisit}
-                          />
+                          <div id={`folder-${folder.id}`} key={folder.id} className="scroll-mt-20">
+                            <SortableFolderCard
+                              folder={folder}
+                              onDelete={handleFolderDelete}
+                              onBookmarkDelete={handleDeleteBookmark}
+                              onFolderClick={handleFolderClick}
+                              onEdit={openEditFolder}
+                              searchQuery={searchQuery}
+                              highlightText={highlightText}
+                              onVisit={handleBookmarkVisit}
+                            />
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -1607,6 +1650,80 @@ const MainPage: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+        {/* 目录（侧边锚点） */}
+        {((!selectedFolder && getFilteredFolders().length > 0) ||
+          (selectedFolder && getFilteredSubFolders().length > 0)) && (
+          <div className="hidden xl:block fixed right-0 2xl:right-8 top-24 z-40 pointer-events-auto">
+              <div className="w-52 2xl:w-64 bg-white/95 backdrop-blur rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4">
+                <div className="text-2xl font-bold text-gray-900">目录</div>
+                <button
+                  className="text-gray-500 hover:text-gray-700 text-sm inline-flex items-center gap-1"
+                  onClick={() => setTocCollapsed((v) => !v)}
+                >
+                  {tocCollapsed ? (
+                    <>
+                      展开 <DownOutlined />
+                    </>
+                  ) : (
+                    <>
+                      收起 <UpOutlined />
+                    </>
+                  )}
+                </button>
+              </div>
+              {!tocCollapsed && (
+                <>
+                  <div className="h-px bg-gray-100 mx-5" />
+                  <div className="max-h-[65vh] overflow-y-auto no-scrollbar py-2 pb-3">
+                    {(!selectedFolder ? getFilteredFolders() : getFilteredSubFolders()).map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => {
+                          scrollToFolder(f.id);
+                          setActiveAnchorId(f.id);
+                        }}
+                        title={f.title}
+                        className={`group w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-gray-50 ${
+                          activeAnchorId === f.id ? "text-blue-600" : "text-gray-800"
+                        }`}
+                      >
+                        <span
+                          className={`w-1 h-5 rounded-full ${
+                            activeAnchorId === f.id
+                              ? "bg-blue-600"
+                              : "bg-transparent group-hover:bg-gray-300"
+                          }`}
+                        />
+                        <span className="truncate">{f.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 右下角悬浮按钮：去设置页 / 回到顶部 */}
+        <div className="fixed right-6 bottom-6 flex flex-col items-center gap-3 z-50">
+          <Button
+            shape="circle"
+            size="large"
+            icon={<SettingOutlined />}
+            onClick={goToSettings}
+            className="!w-12 !h-12 flex items-center justify-center bg-white/95 hover:bg-gray-100 shadow-xl border border-gray-200"
+            title="去设置页"
+          />
+          <Button
+            shape="circle"
+            size="large"
+            icon={<ArrowUpOutlined />}
+            onClick={scrollToTop}
+            className="!w-12 !h-12 flex items-center justify-center bg-white/95 hover:bg-gray-100 shadow-xl border border-gray-200"
+            title="回到顶部"
+          />
         </div>
       </Content>
 
