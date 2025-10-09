@@ -1,8 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { ConfigProvider, Form, Input, Switch, Button, Space, Typography, Divider, message } from "antd";
+import { ConfigProvider, Form, Input, Switch, Button, Space, Typography, Divider, message, Select } from "antd";
 import zhCN from "antd/locale/zh_CN";
+import enUS from "antd/locale/en_US";
 import "../popup/index.css";
+import { 
+  getMessage, 
+  LANGUAGE_OPTIONS,
+  type SupportedLanguage 
+} from "../shared/i18n";
+import { useLanguage } from "../shared/i18n/useLanguage";
 
 const { Title, Paragraph } = Typography as any;
 
@@ -11,12 +18,14 @@ const DEFAULT_DIFY_BASE = "https://api.dify.ai";
 const Options: React.FC = () => {
   const [form] = Form.useForm();
   const [saving, setSaving] = React.useState(false);
+  const { language: currentLanguage, changeLanguage } = useLanguage();
   const isChromeExt = Boolean((globalThis as any)?.chrome?.storage?.sync);
 
   React.useEffect(() => {
-    if (!isChromeExt) return; // 预览环境不读取
     (async () => {
       try {
+        if (!isChromeExt) return; // 预览环境不读取设置
+        
         const { useDifyKeyword, difyApiKey, difyBaseUrl, difyUserId, defaultBookmarksCollapsed } = await chrome.storage.sync.get({
           useDifyKeyword: false,
           difyApiKey: "",
@@ -37,12 +46,24 @@ const Options: React.FC = () => {
     })();
   }, [form, isChromeExt]);
 
+  const handleLanguageChange = async (language: SupportedLanguage) => {
+    try {
+      await changeLanguage(language);
+      message.success(getMessage('settingsSaved'));
+      // 刷新页面以应用新语言
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+      message.error(getMessage('saveFailed'));
+    }
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
       const values = await form.validateFields();
       if (!isChromeExt) {
-        message.warning("当前为预览环境，设置未写入浏览器");
+        message.warning(getMessage('previewEnvironment'));
         return;
       }
       await chrome.storage.sync.set({
@@ -52,10 +73,10 @@ const Options: React.FC = () => {
         difyUserId: values.difyUserId || "sb-extension",
         defaultBookmarksCollapsed: !!values.defaultBookmarksCollapsed,
       });
-      message.success("已保存设置");
+      message.success(getMessage('settingsSaved'));
     } catch (e) {
       console.error(e);
-      message.error("保存失败，请重试");
+      message.error(getMessage('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -64,19 +85,39 @@ const Options: React.FC = () => {
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <Title level={3} style={{ marginBottom: 8 }}>
-        Smart Bookmarks 设置
+        {getMessage('optionsTitle')}
       </Title>
       <Paragraph type="secondary" style={{ marginTop: 0 }}>
-        配置 Dify 工作流以在弹窗收藏书签时自动生成关键词。
+        {getMessage('optionsDescription')}
       </Paragraph>
 
       <Divider />
 
       <Form form={form} layout="vertical">
+        <Title level={4} style={{ marginBottom: 16 }}>
+          {getMessage('languageSettings')}
+        </Title>
+        
+        <Form.Item
+          label={getMessage('selectLanguage')}
+          style={{ marginBottom: 24 }}
+        >
+          <Select
+            value={currentLanguage}
+            onChange={handleLanguageChange}
+            style={{ width: 200 }}
+            options={LANGUAGE_OPTIONS.map(option => ({
+              value: option.value,
+              label: option.label
+            }))}
+          />
+        </Form.Item>
+
+        <Divider />
         <Form.Item
           name="defaultBookmarksCollapsed"
-          label="默认折叠书签列表"
-          tooltip="影响主界面所有文件夹的‘书签’区块初始展开/折叠状态"
+          label={getMessage('defaultBookmarksCollapsed')}
+          tooltip={getMessage('defaultBookmarksCollapsedTooltip')}
           valuePropName="checked"
         >
           <Switch onChange={(checked) => { form.setFieldValue("defaultBookmarksCollapsed", checked); handleSave(); }} />
@@ -84,7 +125,7 @@ const Options: React.FC = () => {
 
         <Form.Item
           name="useDifyKeyword"
-          label="使用 Dify 生成关键词"
+          label={getMessage('useDifyKeyword')}
           valuePropName="checked"
         >
           <Switch onChange={(checked) => { form.setFieldValue("useDifyKeyword", checked); handleSave(); }} />
@@ -92,8 +133,8 @@ const Options: React.FC = () => {
 
         <Form.Item
           name="difyApiKey"
-          label="Dify API Key"
-          tooltip="从 Dify 控制台获取的 API Key，用于调用工作流接口"
+          label={getMessage('difyApiKey')}
+          tooltip={getMessage('difyApiKeyTooltip')}
           rules={[{ required: false }]}
         >
           <Input.Password placeholder="sk-..." visibilityToggle allowClear />
@@ -101,29 +142,29 @@ const Options: React.FC = () => {
 
         <Form.Item
           name="difyBaseUrl"
-          label="Dify API Base URL"
-          tooltip="通常为 https://api.dify.ai；如使用自托管或私有部署，请填写对应地址"
+          label={getMessage('difyBaseUrl')}
+          tooltip={getMessage('difyBaseUrlTooltip')}
         >
           <Input placeholder={DEFAULT_DIFY_BASE} />
         </Form.Item>
 
         <Form.Item
           name="difyUserId"
-          label="Dify User ID"
-          tooltip="用于区分调用用户的 ID，可保持默认"
+          label={getMessage('difyUserId')}
+          tooltip={getMessage('difyUserIdTooltip')}
         >
           <Input placeholder="sb-extension" />
         </Form.Item>
 
         <Space>
           <Button type="primary" loading={saving} onClick={handleSave}>
-            保存设置
+            {getMessage('saveSettings')}
           </Button>
           <Button
             type="link"
             onClick={() => window.open("https://cloud.dify.ai/app/dccbbc41-c4c1-4d27-b0a2-16812eba5781/develop", "_blank")}
           >
-            访问我的 Dify 工作流
+            {getMessage('visitDifyWorkflow')}
           </Button>
         </Space>
       </Form>
@@ -131,10 +172,19 @@ const Options: React.FC = () => {
   );
 };
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ConfigProvider locale={zhCN}>
+const App: React.FC = () => {
+  const { language } = useLanguage();
+  const antdLocale = language === 'en' ? enUS : zhCN;
+
+  return (
+    <ConfigProvider locale={antdLocale}>
       <Options />
     </ConfigProvider>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
   </React.StrictMode>
 );

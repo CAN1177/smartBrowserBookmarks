@@ -1,0 +1,94 @@
+{
+  "extensionName": {
+    "message": "Smart Browser Bookmarks",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Smart bookmark extension with keyword extraction, intelligent search and history management",
+    "description": "Extension description"
+  },
+  "optionsTitle": {
+    "message": "Smart Bookmarks Settings",
+    "description": "Options page title"
+  },
+  "optionsDescription": {
+    "message": "Configure Dify workflow to automatically generate keywords when bookmarking pages in popup.",
+    "description": "Options page description"
+  },
+  "languageSettings": {
+    "message": "Language Settings",
+    "description": "Language settings title"
+  },
+  "selectLanguage": {
+    "message": "Select Language",
+    "description": "Language selection label"
+  },
+  "chinese": {
+    "message": "中文",
+    "description": "Chinese option"
+  },
+  "english": {
+    "message": "English",
+    "description": "English option"
+  },
+  "defaultBookmarksCollapsed": {
+    "message": "Default Bookmarks Collapsed",
+    "description": "Default bookmarks collapsed setting"
+  },
+  "defaultBookmarksCollapsedTooltip": {
+    "message": "Affects the initial expand/collapse state of 'Bookmarks' sections in all folders in the main interface",
+    "description": "Default bookmarks collapsed tooltip"
+  },
+  "useDifyKeyword": {
+    "message": "Use Dify to Generate Keywords",
+    "description": "Use Dify keyword generation setting"
+  },
+  "difyApiKey": {
+    "message": "Dify API Key",
+    "description": "Dify API Key label"
+  },
+  "difyApiKeyTooltip": {
+    "message": "API Key obtained from Dify console, used to call workflow interface",
+    "description": "Dify API Key tooltip"
+  },
+  "difyBaseUrl": {
+    "message": "Dify API Base URL",
+    "description": "Dify API Base URL label"
+  },
+  "difyBaseUrlTooltip": {
+    "message": "Usually https://api.dify.ai; if using self-hosted or private deployment, please fill in the corresponding address",
+    "description": "Dify API Base URL tooltip"
+  },
+  "difyUserId": {
+    "message": "Dify User ID",
+    "description": "Dify User ID label"
+  },
+  "difyUserIdTooltip": {
+    "message": "ID used to distinguish calling users, can keep default",
+    "description": "Dify User ID tooltip"
+  },
+  "saveSettings": {
+    "message": "Save Settings",
+    "description": "Save settings button"
+  },
+  "visitDifyWorkflow": {
+    "message": "Visit My Dify Workflow",
+    "description": "Visit Dify workflow button"
+  },
+  "settingsSaved": {
+    "message": "Settings saved successfully",
+    "description": "Settings saved success message"
+  },
+  "saveFailed": {
+    "message": "Save failed, please try again",
+    "description": "Settings save failed message"
+  },
+  "previewEnvironment": {
+    "message": "Current preview environment, settings not written to browser",
+    "description": "Preview environment warning message"
+  },
+  "quickSearchBookmarks": {
+    "message": "Quick search bookmarks",
+    "description": "Quick search command description"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "extensionName": {
+    "message": "智能收藏夹",
+    "description": "扩展程序名称"
+  },
+  "extensionDescription": {
+    "message": "智能收藏夹插件，支持关键词提取、智能搜索和历史记录管理",
+    "description": "扩展程序描述"
+  },
+  "optionsTitle": {
+    "message": "Smart Bookmarks 设置",
+    "description": "设置页面标题"
+  },
+  "optionsDescription": {
+    "message": "配置 Dify 工作流以在弹窗收藏书签时自动生成关键词。",
+    "description": "设置页面描述"
+  },
+  "languageSettings": {
+    "message": "语言设置",
+    "description": "语言设置标题"
+  },
+  "selectLanguage": {
+    "message": "选择语言",
+    "description": "语言选择标签"
+  },
+  "chinese": {
+    "message": "中文",
+    "description": "中文选项"
+  },
+  "english": {
+    "message": "English",
+    "description": "英文选项"
+  },
+  "defaultBookmarksCollapsed": {
+    "message": "默认折叠书签列表",
+    "description": "默认折叠书签列表设置"
+  },
+  "defaultBookmarksCollapsedTooltip": {
+    "message": "影响主界面所有文件夹的'书签'区块初始展开/折叠状态",
+    "description": "默认折叠书签列表提示"
+  },
+  "useDifyKeyword": {
+    "message": "使用 Dify 生成关键词",
+    "description": "使用 Dify 生成关键词设置"
+  },
+  "difyApiKey": {
+    "message": "Dify API Key",
+    "description": "Dify API Key 标签"
+  },
+  "difyApiKeyTooltip": {
+    "message": "从 Dify 控制台获取的 API Key，用于调用工作流接口",
+    "description": "Dify API Key 提示"
+  },
+  "difyBaseUrl": {
+    "message": "Dify API Base URL",
+    "description": "Dify API Base URL 标签"
+  },
+  "difyBaseUrlTooltip": {
+    "message": "通常为 https://api.dify.ai；如使用自托管或私有部署，请填写对应地址",
+    "description": "Dify API Base URL 提示"
+  },
+  "difyUserId": {
+    "message": "Dify User ID",
+    "description": "Dify User ID 标签"
+  },
+  "difyUserIdTooltip": {
+    "message": "用于区分调用用户的 ID，可保持默认",
+    "description": "Dify User ID 提示"
+  },
+  "saveSettings": {
+    "message": "保存设置",
+    "description": "保存设置按钮"
+  },
+  "visitDifyWorkflow": {
+    "message": "访问我的 Dify 工作流",
+    "description": "访问 Dify 工作流按钮"
+  },
+  "settingsSaved": {
+    "message": "已保存设置",
+    "description": "设置保存成功消息"
+  },
+  "saveFailed": {
+    "message": "保存失败，请重试",
+    "description": "设置保存失败消息"
+  },
+  "previewEnvironment": {
+    "message": "当前为预览环境，设置未写入浏览器",
+    "description": "预览环境警告消息"
+  },
+  "quickSearchBookmarks": {
+    "message": "快速搜索收藏夹",
+    "description": "快速搜索命令描述"
+  }
+}

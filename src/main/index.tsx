@@ -11,6 +11,9 @@ import {
   message,
   Modal,
 } from "antd";
+import { ConfigProvider, theme } from "antd";
+import zhCN from "antd/locale/zh_CN";
+import enUS from "antd/locale/en_US";
 import {
   DeleteOutlined,
   SearchOutlined,
@@ -41,6 +44,11 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import "../popup/index.css";
+import { useLanguage } from "../shared/i18n/useLanguage";
+import { getMessage } from "../shared/i18n";
+
+// 简化本地取文案
+const t = (key: string) => getMessage(key);
 
 const { Header, Content } = Layout;
 
@@ -188,10 +196,10 @@ const SortableFolderCard: React.FC<{
                 className="hover:bg-gray-100 rounded-2xl transition-all duration-300 hover:shadow-lg border border-gray-200/50"
               />
               <Popconfirm
-                title="确定删除这个文件夹吗？"
+                title={t('confirmDeleteFolder')}
                 onConfirm={() => onDelete(folder.id)}
-                okText="删除"
-                cancelText="取消"
+                okText={t('delete')}
+                cancelText={t('cancel')}
               >
                 <Button
                   type="text"
@@ -204,12 +212,12 @@ const SortableFolderCard: React.FC<{
           </div>
 
           {/* 显示所有子文件夹 */}
-          {folder.childFolders.length > 0 && (
-            <div className="space-y-2 mb-4">
-              <div className="text-sm font-medium text-gray-600 mb-2">
-                子文件夹
-              </div>
-              {folder.childFolders.map((subFolder) => (
+              {folder.childFolders.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  <div className="text-sm font-medium text-gray-600 mb-2">
+                {t('subfolders')}
+                  </div>
+                  {folder.childFolders.map((subFolder) => (
                 <div
                   key={subFolder.id}
                   className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
@@ -241,14 +249,14 @@ const SortableFolderCard: React.FC<{
           {previewChildren.length > 0 && (
             <div className="w-full space-y-2">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-medium text-gray-600">书签</div>
+                <div className="text-sm font-medium text-gray-600">{t('bookmarks')}</div>
                 {previewChildren.length > 3 && !(searchQuery && String(searchQuery).length > 0) && (
                   <button
                     className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
                     onClick={() => setFolderPreviewCollapsed((v) => !v)}
-                    title={folderPreviewCollapsed ? "展开书签" : "折叠书签"}
+                    title={folderPreviewCollapsed ? t('expandBookmarks') : t('collapseBookmarks')}
                   >
-                    {folderPreviewCollapsed ? "展开" : "折叠"}
+                    {folderPreviewCollapsed ? t('expand') : t('collapse')}
                   </button>
                 )}
               </div>
@@ -320,13 +328,13 @@ const SortableFolderCard: React.FC<{
                       window.open(bookmark.url, "_blank");
                       void handleLocalVisit(bookmark);
                     }}
-                    title="访问并计数"
+                    title={t('visitAndCount')}
                   />
                   <Popconfirm
-                    title="确定删除这个书签吗？"
+                    title={t('confirmDeleteBookmark')}
                     onConfirm={() => onBookmarkDelete(bookmark.id)}
-                    okText="删除"
-                    cancelText="取消"
+                    okText={t('delete')}
+                    cancelText={t('cancel')}
                   >
                     <Button
                       type="text"
@@ -416,10 +424,10 @@ const SortableBookmarkCard: React.FC<{
                 <DragOutlined className="text-gray-400" />
               </div>
               <Popconfirm
-                title="确定删除这个书签吗？"
+                title={t('confirmDeleteBookmark')}
                 onConfirm={() => onDelete(bookmark.id)}
-                okText="删除"
-                cancelText="取消"
+                okText={t('delete')}
+                cancelText={t('cancel')}
               >
                 <Button
                   type="text"
@@ -1346,11 +1354,7 @@ const MainPage: React.FC = () => {
           <div className="flex items-center space-x-4">
             <div className="relative">
               <Input
-                placeholder={
-                  selectedFolder
-                    ? `在 ${selectedFolder.title} 中搜索...`
-                    : "搜索书签..."
-                }
+                placeholder={t('searchBookmarks')}
                 prefix={<SearchOutlined className="text-gray-400" />}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1387,19 +1391,19 @@ const MainPage: React.FC = () => {
         </div>
 
         <div className="relative w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/60 p-8 glass-effect">
-          {selectedFolder && (
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {/* 面包屑导航 */}
-                <div className="flex items-center space-x-1 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-white/40 shadow-sm">
-                  <Button
-                    type="link"
-                    icon={<GlobalOutlined />}
-                    onClick={() => handleNavigateToFolder(-1)}
-                    className="p-0 h-auto text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                  >
-                    所有文件夹
-                  </Button>
+              {selectedFolder && (
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {/* 面包屑导航 */}
+                    <div className="flex items-center space-x-1 bg-white/60 backdrop-blur-sm rounded-2xl px-4 py-2 border border-white/40 shadow-sm">
+                      <Button
+                        type="link"
+                        icon={<GlobalOutlined />}
+                        onClick={() => handleNavigateToFolder(-1)}
+                        className="p-0 h-auto text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                      >
+                        {t('foldersAll')}
+                      </Button>
 
                   {folderPath.map((folder, index) => (
                     <React.Fragment key={folder.id}>
@@ -1421,7 +1425,7 @@ const MainPage: React.FC = () => {
 
                 <div className="ml-4 bg-gradient-to-r from-blue-100/80 to-indigo-100/80 backdrop-blur-sm px-3 py-1 rounded-xl border border-blue-200/50 shadow-sm">
                   <span className="text-sm text-blue-700 font-medium">
-                    📄 {selectedFolder.children.length} 个书签
+                    📄 {selectedFolder.children.length} {t('bookmarks')}
                   </span>
                 </div>
               </div>
@@ -1508,9 +1512,9 @@ const MainPage: React.FC = () => {
                     <button
                       className="ml-auto text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
                       onClick={() => setCollapsedInFolderView((v) => !v)}
-                      title={collapsedInFolderView ? "展开书签" : "折叠书签"}
+                      title={collapsedInFolderView ? t('expandBookmarks') : t('collapseBookmarks')}
                     >
-                      {collapsedInFolderView ? "展开" : "折叠"}
+                      {collapsedInFolderView ? t('expand') : t('collapse')}
                     </button>
                   </h3>
                   {!collapsedInFolderView && (
@@ -1603,9 +1607,9 @@ const MainPage: React.FC = () => {
                     <button
                       className="ml-auto text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
                       onClick={() => setCollapsedInAllView((v) => !v)}
-                      title={collapsedInAllView ? "展开书签" : "折叠书签"}
+                      title={collapsedInAllView ? t('expandBookmarks') : t('collapseBookmarks')}
                     >
-                      {collapsedInAllView ? "展开" : "折叠"}
+                      {collapsedInAllView ? t('expand') : t('collapse')}
                     </button>
                   </h3>
                   {!collapsedInAllView && (
@@ -1865,8 +1869,31 @@ const MainPage: React.FC = () => {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <MainPage />
+    {/* 根据语言选择动态设置 Ant Design 的本地化与主题 */}
+    <LanguageWrapper>
+      <MainPage />
+    </LanguageWrapper>
   </React.StrictMode>
 );
 
 // ... existing code ...
+
+// 语言包裹组件，负责根据当前语言切换 Ant Design 的 locale
+function LanguageWrapper({ children }: { children: React.ReactNode }) {
+  const { language } = useLanguage();
+  const antdLocale = language === "en" ? enUS : zhCN;
+  return (
+    <ConfigProvider
+      locale={antdLocale}
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: "#1890ff",
+          borderRadius: 6,
+        },
+      }}
+    >
+      {children}
+    </ConfigProvider>
+  );
+}

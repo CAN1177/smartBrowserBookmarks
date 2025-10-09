@@ -24,6 +24,8 @@ import {
   AppstoreOutlined,
   GlobalOutlined,
 } from "@ant-design/icons";
+import { getMessage } from "../shared/i18n";
+import { useLanguage } from "../shared/i18n/useLanguage";
 
 const LAST_SELECTED_FOLDER_ID_KEY = "lastSelectedFolderId";
 const { Header, Content } = Layout;
@@ -59,6 +61,7 @@ interface CurrentPageInfo {
 }
 
 const App: React.FC = () => {
+  useLanguage(); // 初始化语言设置
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [bookmarkTree, setBookmarkTree] = useState<TreeNode[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -191,10 +194,10 @@ const App: React.FC = () => {
         message.info("未从 Dify 获取到有效关键词");
       }
       form.setFieldValue("keywords", merged);
-      message.success("已生成关键词");
-    } catch (e: any) {
-      console.error(e);
-      message.error(e?.message || "生成关键词失败");
+      message.success(getMessage('keywordsGenerated'));
+      } catch (e: any) {
+        console.error(e);
+        message.error(e?.message || getMessage('keywordGenerationFailed'));
     } finally {
       setDifyLoading(false);
     }
@@ -236,7 +239,7 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error("加载书签失败:", error);
-      message.error("加载书签失败");
+      message.error(getMessage('loadBookmarksFailed'));
     } finally {
       setLoading(false);
     }
@@ -327,7 +330,7 @@ const App: React.FC = () => {
           new URL(node.url).hostname
         }`,
         tags: keywords, // 使用解析出的关键词作为标签
-        category: "默认",
+        category: getMessage('defaultCategory'),
         dateAdded: node.dateAdded,
         visitCount: getVisitCountFromTitle(node.title),
       });
@@ -367,12 +370,12 @@ const App: React.FC = () => {
       const folderTitle =
         node.title ||
         (node.id === "1"
-          ? "书签栏"
-          : node.id === "2"
-          ? "其他书签"
-          : node.id === "3"
-          ? "移动设备书签"
-          : "未命名文件夹");
+          ? getMessage('bookmarksBar')
+        : node.id === "2"
+        ? getMessage('otherBookmarks')
+        : node.id === "3"
+        ? getMessage('mobileBookmarks')
+        : getMessage('unnamedFolder'));
       return {
         key: node.id,
         title: folderTitle,
@@ -395,12 +398,12 @@ const App: React.FC = () => {
         title:
           node.title ||
           (node.id === "0"
-            ? "根目录"
-            : node.id === "1"
-            ? "书签栏"
-            : node.id === "2"
-            ? "其他书签"
-            : "未命名文件夹"),
+            ? getMessage('rootDirectory')
+        : node.id === "1"
+        ? getMessage('bookmarksBar')
+        : node.id === "2"
+        ? getMessage('otherBookmarks')
+        : getMessage('unnamedFolder')),
       });
     }
 
@@ -435,7 +438,7 @@ const App: React.FC = () => {
       window.close(); // 关闭弹窗
     } catch (error) {
       console.error("打开链接失败:", error);
-      message.error("打开链接失败");
+      message.error(getMessage('openLinkFailed'));
     }
   };
 
@@ -474,11 +477,11 @@ const App: React.FC = () => {
 
         setShowAddModal(true);
       } else {
-        message.error("获取页面信息失败");
-      }
-    } catch (error) {
-      console.error("获取页面信息失败:", error);
-      message.error("获取页面信息失败");
+          message.error(getMessage('getPageInfoFailed'));
+        }
+      } catch (error) {
+        console.error("获取页面信息失败:", error);
+        message.error(getMessage('getPageInfoFailed'));
     }
   };
 
@@ -500,11 +503,11 @@ const App: React.FC = () => {
         // 重新加载书签列表
         loadBookmarks();
       } else {
-        message.error("添加收藏失败");
-      }
-    } catch (error) {
-      console.error("添加收藏失败:", error);
-      message.error("添加收藏失败");
+          message.error(getMessage('addBookmarkFailed'));
+        }
+      } catch (error) {
+        console.error("添加收藏失败:", error);
+        message.error(getMessage('addBookmarkFailed'));
     }
   };
 
@@ -517,14 +520,14 @@ const App: React.FC = () => {
     const title =
       node.title ||
       (node.id === "0"
-        ? "根目录"
+        ? getMessage('rootDirectory')
         : node.id === "1"
-        ? "书签栏"
+        ? getMessage('bookmarksBar')
         : node.id === "2"
-        ? "其他书签"
+        ? getMessage('otherBookmarks')
         : node.id === "3"
-        ? "移动设备书签"
-        : "未命名文件夹");
+        ? getMessage('mobileBookmarks')
+        : getMessage('unnamedFolder'));
 
     const children = (node.children || [])
       .map((child) => convertNodeToTreeSelect(child))
@@ -572,11 +575,11 @@ const App: React.FC = () => {
         form.setFieldValue("folder", createdId);
         localStorage.setItem(LAST_SELECTED_FOLDER_ID_KEY, String(createdId));
       } else {
-        message.error("创建文件夹失败");
+        message.error(getMessage('createFolderFailed'));
       }
     } catch (error) {
       console.error("创建文件夹失败:", error);
-      message.error("创建文件夹失败");
+      message.error(getMessage('createFolderFailed'));
     }
   };
 
@@ -592,7 +595,7 @@ const App: React.FC = () => {
 
   const handleConfirmCreateFolderInBrowse = async () => {
     if (!newFolderNameBrowse.trim() || !contextFolderId) {
-      message.error("请输入文件夹名称");
+      message.error(getMessage('pleaseEnterFolderName'));
       return;
     }
     try {
@@ -602,17 +605,17 @@ const App: React.FC = () => {
         parentId: contextFolderId,
       });
       if (response.success) {
-        message.success("文件夹创建成功！");
+        message.success(getMessage('createFolderSuccess'));
         setShowNewFolderModalBrowse(false);
         setNewFolderNameBrowse("");
         // 刷新树
         loadBookmarks();
       } else {
-        message.error("创建文件夹失败");
+        message.error(getMessage('createFolderFailed'));
       }
     } catch (e) {
       console.error(e);
-      message.error("创建文件夹失败");
+      message.error(getMessage('createFolderFailed'));
     }
   };
 
@@ -841,9 +844,9 @@ const App: React.FC = () => {
                 })
               }
               size="small"
-              title="打开主界面"
+              title={getMessage('openMainInterface')}
             >
-              主界面
+              {getMessage('openMainInterface')}
             </Button>
             <Button
               type="text"
@@ -851,7 +854,7 @@ const App: React.FC = () => {
               size="small"
               onClick={() => chrome.runtime.openOptionsPage?.()}
             >
-              设置
+              {getMessage('settings')}
             </Button>
           </Space>
         </div>
@@ -874,47 +877,47 @@ const App: React.FC = () => {
               className="w-full"
               onClick={getCurrentPageInfo}
             >
-              添加当前页面
+              {getMessage('addCurrentPage')}
             </Button>
           </div>
         </div>
 
         <Modal
-          title="添加收藏"
+          title={getMessage('addBookmark')}
           open={showAddModal}
           onCancel={() => {
             setShowAddModal(false);
             form.resetFields();
           }}
           onOk={() => form.submit()}
-          okText="添加"
-          cancelText="取消"
+          okText={getMessage('add')}
+          cancelText={getMessage('cancel')}
           width={500}
         >
           <Form form={form} layout="vertical" onFinish={handleAddBookmark}>
             <Form.Item
               name="title"
-              label="标题"
-              rules={[{ required: true, message: "请输入标题" }]}
+              label={getMessage('title')}
+              rules={[{ required: true, message: getMessage('pleaseEnterTitle') }]}
             >
-              <Input placeholder="页面标题" />
+              <Input placeholder={getMessage('pageTitle')} />
             </Form.Item>
 
             <Form.Item
               name="url"
-              label="网址"
-              rules={[{ required: true, message: "请输入网址" }]}
+              label={getMessage('url')}
+              rules={[{ required: true, message: getMessage('pleaseEnterUrl') }]}
             >
               <Input placeholder="https://..." />
             </Form.Item>
 
-            <Form.Item name="description" label="描述">
-              <Input.TextArea placeholder="页面描述（可选）" rows={2} />
+            <Form.Item name="description" label={getMessage('description')}>
+              <Input.TextArea placeholder={getMessage('pageDescriptionOptional')} rows={2} />
             </Form.Item>
 
-            <Form.Item name="folder" label="保存到文件夹">
+            <Form.Item name="folder" label={getMessage('saveToFolder')}>
               <TreeSelect
-                placeholder="选择文件夹"
+                placeholder={getMessage('selectFolder')}
                 value={form.getFieldValue("folder") || "1"}
                 treeData={folderTreeData}
                 onChange={(value) => {
@@ -939,7 +942,7 @@ const App: React.FC = () => {
                     <Divider style={{ margin: "8px 0" }} />
                     <Space style={{ padding: "0 8px 4px" }}>
                       <Input
-                        placeholder="新文件夹名称"
+                        placeholder={getMessage('newFolderName')}
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         onPressEnter={() =>
@@ -958,7 +961,7 @@ const App: React.FC = () => {
                           )
                         }
                       >
-                        创建
+                        {getMessage('create')}
                       </Button>
                     </Space>
                   </>
@@ -966,10 +969,10 @@ const App: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item name="keywords" label="关键词">
+            <Form.Item name="keywords" label={getMessage('keywords')}>
               <Select
                 mode="tags"
-                placeholder="自动提取的关键词（可编辑）"
+                placeholder={getMessage('autoExtractedKeywordsEditable')}
                 style={{ width: "100%" }}
                 tokenSeparators={[","]}
                 value={form.getFieldValue("keywords")}

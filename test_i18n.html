@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多语言功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .language-selector {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+        button.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+        .message-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .message-item {
+            padding: 8px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .message-key {
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Smart Bookmarks 多语言功能测试</h1>
+    
+    <div class="language-selector">
+        <h3>语言选择</h3>
+        <button id="btn-zh" class="active" onclick="changeLanguage('zh_CN')">中文</button>
+        <button id="btn-en" onclick="changeLanguage('en')">English</button>
+        <p>当前语言: <span id="current-lang">zh_CN</span></p>
+    </div>
+
+    <div class="test-section">
+        <h3>设置页面文本测试</h3>
+        <div class="message-list">
+            <div class="message-item">
+                <div class="message-key">optionsTitle:</div>
+                <div id="msg-optionsTitle"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">optionsDescription:</div>
+                <div id="msg-optionsDescription"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">languageSettings:</div>
+                <div id="msg-languageSettings"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">selectLanguage:</div>
+                <div id="msg-selectLanguage"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">saveSettings:</div>
+                <div id="msg-saveSettings"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">settingsSaved:</div>
+                <div id="msg-settingsSaved"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>主界面文本测试</h3>
+        <div class="message-list">
+            <div class="message-item">
+                <div class="message-key">searchPlaceholder:</div>
+                <div id="msg-searchPlaceholder"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">newBookmark:</div>
+                <div id="msg-newBookmark"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">bookmarksBar:</div>
+                <div id="msg-bookmarksBar"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">otherBookmarks:</div>
+                <div id="msg-otherBookmarks"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">addBookmarkFailed:</div>
+                <div id="msg-addBookmarkFailed"></div>
+            </div>
+            <div class="message-item">
+                <div class="message-key">keywordsGenerated:</div>
+                <div id="msg-keywordsGenerated"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 导入 i18n 模块
+        import { getMessage, setCurrentLanguage, getCurrentLanguageSync } from './src/shared/i18n/index.ts';
+
+        let currentLanguage = 'zh_CN';
+
+        // 测试消息键列表
+        const testMessages = [
+            'optionsTitle', 'optionsDescription', 'languageSettings', 'selectLanguage',
+            'saveSettings', 'settingsSaved', 'searchPlaceholder', 'newBookmark',
+            'bookmarksBar', 'otherBookmarks', 'addBookmarkFailed', 'keywordsGenerated'
+        ];
+
+        // 更新所有消息显示
+        function updateMessages() {
+            testMessages.forEach(key => {
+                const element = document.getElementById(`msg-${key}`);
+                if (element) {
+                    element.textContent = getMessage(key);
+                }
+            });
+        }
+
+        // 切换语言
+        window.changeLanguage = async function(lang) {
+            try {
+                await setCurrentLanguage(lang);
+                currentLanguage = lang;
+                
+                // 更新按钮状态
+                document.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`btn-${lang === 'zh_CN' ? 'zh' : 'en'}`).classList.add('active');
+                
+                // 更新当前语言显示
+                document.getElementById('current-lang').textContent = lang;
+                
+                // 更新所有消息
+                updateMessages();
+                
+                console.log('语言已切换到:', lang);
+            } catch (error) {
+                console.error('切换语言失败:', error);
+            }
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMessages();
+        });
+    </script>
+</body>
+</html>

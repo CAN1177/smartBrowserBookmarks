@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Smart Browser Bookmarks",
+  "name": "__MSG_extensionName__",
   "version": "1.0.0",
-  "description": "智能收藏夹插件，支持关键词提取、智能搜索和历史记录管理",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "zh_CN",
   "icons": {
     "16": "assets/icons/icon16.svg",
     "48": "assets/icons/icon48.svg",
@@ -43,7 +44,7 @@
         "default": "Ctrl+Shift+K",
         "mac": "Command+Shift+K"
       },
-      "description": "快速搜索收藏夹"
+      "description": "__MSG_quickSearchBookmarks__"
     }
   }
 }
