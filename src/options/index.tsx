@@ -17,17 +17,19 @@ const Options: React.FC = () => {
     if (!isChromeExt) return; // 预览环境不读取
     (async () => {
       try {
-        const { useDifyKeyword, difyApiKey, difyBaseUrl, difyUserId } = await chrome.storage.sync.get({
+        const { useDifyKeyword, difyApiKey, difyBaseUrl, difyUserId, defaultBookmarksCollapsed } = await chrome.storage.sync.get({
           useDifyKeyword: false,
           difyApiKey: "",
           difyBaseUrl: DEFAULT_DIFY_BASE,
           difyUserId: "sb-extension",
+          defaultBookmarksCollapsed: true,
         });
         form.setFieldsValue({
           useDifyKeyword,
           difyApiKey,
           difyBaseUrl: difyBaseUrl || DEFAULT_DIFY_BASE,
           difyUserId,
+          defaultBookmarksCollapsed,
         });
       } catch (e) {
         console.error(e);
@@ -48,6 +50,7 @@ const Options: React.FC = () => {
         difyApiKey: values.difyApiKey || "",
         difyBaseUrl: values.difyBaseUrl || DEFAULT_DIFY_BASE,
         difyUserId: values.difyUserId || "sb-extension",
+        defaultBookmarksCollapsed: !!values.defaultBookmarksCollapsed,
       });
       message.success("已保存设置");
     } catch (e) {
@@ -70,6 +73,15 @@ const Options: React.FC = () => {
       <Divider />
 
       <Form form={form} layout="vertical">
+        <Form.Item
+          name="defaultBookmarksCollapsed"
+          label="默认折叠书签列表"
+          tooltip="影响主界面所有文件夹的‘书签’区块初始展开/折叠状态"
+          valuePropName="checked"
+        >
+          <Switch onChange={(checked) => { form.setFieldValue("defaultBookmarksCollapsed", checked); handleSave(); }} />
+        </Form.Item>
+
         <Form.Item
           name="useDifyKeyword"
           label="使用 Dify 生成关键词"

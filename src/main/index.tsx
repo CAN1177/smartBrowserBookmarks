@@ -108,12 +108,22 @@ const SortableFolderCard: React.FC<{
 
   // 预览区域本地状态：带访问次数并按次数降序
   const [previewChildren, setPreviewChildren] = useState<BookmarkItem[]>([]);
+  const [folderPreviewCollapsed, setFolderPreviewCollapsed] = useState<boolean>(true);
   useEffect(() => {
     const arr = (folder.children || [])
       .map((b) => ({ ...b, visitCount: b.visitCount ?? localGetVisitCount(b.title) }))
       .sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
     setPreviewChildren(arr);
+    // 当书签数大于 3 时默认折叠，否则展开（搜索时不折叠）
+    setFolderPreviewCollapsed(arr.length > 3 && !(searchQuery && String(searchQuery).length > 0));
   }, [folder.children]);
+
+  // 当进入搜索模式时强制展开
+  useEffect(() => {
+    if (searchQuery && String(searchQuery).length > 0) {
+      setFolderPreviewCollapsed(false);
+    }
+  }, [searchQuery]);
 
   // 本地处理访问：等待外部 onVisit 完成后，更新本地 state 并重排
   const handleLocalVisit = async (b: BookmarkItem) => {
@@ -227,11 +237,24 @@ const SortableFolderCard: React.FC<{
             </div>
           )}
 
-          {/* 显示所有书签预览 */}
+          {/* 显示所有书签预览（>3 默认折叠；搜索时不折叠） */}
           {previewChildren.length > 0 && (
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-600 mb-2">书签</div>
-              {previewChildren.map((bookmark) => (
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-medium text-gray-600">书签</div>
+                {previewChildren.length > 3 && !(searchQuery && String(searchQuery).length > 0) && (
+                  <button
+                    className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
+                    onClick={() => setFolderPreviewCollapsed((v) => !v)}
+                    title={folderPreviewCollapsed ? "展开书签" : "折叠书签"}
+                  >
+                    {folderPreviewCollapsed ? "展开" : "折叠"}
+                  </button>
+                )}
+              </div>
+              {((folderPreviewCollapsed && !(searchQuery && String(searchQuery).length > 0))
+                ? previewChildren.slice(0, 3)
+                : previewChildren).map((bookmark) => (
                 <div
                   key={bookmark.id}
                   className={`flex items-center gap-3 p-3 rounded-lg transition-colors group ${
@@ -273,9 +296,7 @@ const SortableFolderCard: React.FC<{
                           ? highlightText!(bookmark.title, searchQuery!)
                           : bookmark.title}
                       </div>
-                      <span className="ml-1 inline-flex items-center justify-center rounded-full bg-blue-600 text-white text-[10px] leading-4 px-1.5 py-0.5 min-w-[18px] h-4">
-                        {bookmark.visitCount || 0}
-                      </span>
+                      {/* 移除计数展示 */}
                     </div>
                     {bookmark.tags.length > 0 && (
                       <div className="flex gap-1 mt-1 flex-wrap">
@@ -316,6 +337,16 @@ const SortableFolderCard: React.FC<{
                   </Popconfirm>
                 </div>
               ))}
+              {previewChildren.length > 3 && folderPreviewCollapsed && !(searchQuery && String(searchQuery).length > 0) && (
+                <div className="text-right">
+                  <button
+                    className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
+                    onClick={() => setFolderPreviewCollapsed(false)}
+                  >
+                    展开更多 ({previewChildren.length - 3})
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -353,11 +384,9 @@ const SortableBookmarkCard: React.FC<{
     window.open(bookmark.url, "_blank");
   };
 
-  // 统一渲染标题：根据当前计数与标签拼接（仅用于显示，不写回）
-  const m = bookmark.title.match(/\((\d+)\)\s*$/);
-  const displayCount = (bookmark.visitCount ?? (m ? parseInt(m[1], 10) : 0)) || 0;
+  // 统一渲染标题：去掉访问次数，只保留标题与标签（仅用于显示，不写回）
   const baseTitle = bookmark.title.replace(/\s*\(\d+\)\s*$/, "");
-  const displayTitle = `${baseTitle}${displayCount > 0 ? ` (${displayCount})` : ""}${
+  const displayTitle = `${baseTitle}${
     bookmark.tags && bookmark.tags.length ? ` #${bookmark.tags.slice(0, 5).join(", ")}` : ""
   }`;
 
@@ -443,17 +472,17 @@ const SortableBookmarkCard: React.FC<{
       </div>
     );
   } else {
-    // 简洁视图
+    // 简洁视图（与文件夹卡片中的书签预览保持一致尺寸）
     return (
-      <div ref={setNodeRef} style={style} className="mb-3 w-full">
-        <div className="w-full bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200/60 hover:border-blue-200/60 group">
-          <div className="p-4">
-            <div className="flex items-center gap-4">
+      <div ref={setNodeRef} style={style} className="mb-2 w-full">
+        <div className="w-full bg-white rounded-lg shadow hover:shadow-md transition-all duration-200 border border-gray-200 group">
+          <div className="p-3">
+            <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
                 <img
                   src={bookmark.favicon}
                   alt="favicon"
-                  className="w-10 h-10 rounded-xl border border-gray-200 shadow-sm group-hover:shadow-md transition-all duration-200"
+                  className="w-5 h-5 rounded-md border border-gray-200"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       "/assets/default-favicon.png";
@@ -464,22 +493,22 @@ const SortableBookmarkCard: React.FC<{
                 className="flex-1 min-w-0 cursor-pointer"
                 onClick={handleClick}
               >
-                <div className="font-semibold text-lg text-gray-900 hover:text-blue-600 transition-colors duration-200 leading-tight">
+                <div className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200 truncate">
                   {searchQuery && highlightText
                     ? highlightText(displayTitle, searchQuery)
                     : displayTitle}
                 </div>
-                <div className="text-sm text-gray-500 truncate mt-1 group-hover:text-gray-600 transition-colors">
+                <div className="text-xs text-gray-500 truncate mt-1 group-hover:text-gray-600 transition-colors">
                   {searchQuery && highlightText
                     ? highlightText(bookmark.url, searchQuery)
                     : bookmark.url}
                 </div>
                 {bookmark.tags.length > 0 && (
-                  <div className="flex gap-2 mt-3 flex-wrap">
+                  <div className="flex gap-1 mt-1 flex-wrap">
                     {bookmark.tags.slice(0, 4).map((tag) => (
                       <span
                         key={tag}
-                        className="px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 text-sm rounded-full border border-blue-200/50 shadow-sm hover:shadow-md transition-all duration-200"
+                        className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full border border-blue-200/60"
                       >
                         #
                         {searchQuery && highlightText
@@ -488,42 +517,42 @@ const SortableBookmarkCard: React.FC<{
                       </span>
                     ))}
                     {bookmark.tags.length > 4 && (
-                      <span className="px-3 py-1 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 text-sm rounded-full border border-gray-200/50 shadow-sm">
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full border border-gray-200/60">
                         +{bookmark.tags.length - 4}
                       </span>
                     )}
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <div
-                  {...attributes}
-                  {...listeners}
-                  className="cursor-move p-3 hover:bg-gray-100/80 backdrop-blur-sm rounded-xl transition-all duration-200 hover:shadow-md border border-gray-200/50"
-                >
-                  <DragOutlined className="text-gray-400 text-lg" />
-                </div>
-                <Button
-                  type="text"
-                  size="large"
-                  icon={<EditOutlined />}
-                  onClick={() => onEdit(bookmark)}
-                  className="hover:bg-gray-100/80 backdrop-blur-sm rounded-xl transition-all duration-200 hover:shadow-md border border-gray-200/50"
-                />
-                <Popconfirm
-                  title="确定删除这个书签吗？"
-                  onConfirm={() => onDelete(bookmark.id)}
-                  okText="删除"
-                  cancelText="取消"
-                >
-                  <Button
-                    type="text"
-                    size="large"
-                    icon={<DeleteOutlined />}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50/80 backdrop-blur-sm rounded-xl transition-all duration-200 hover:shadow-md border border-red-200/50"
-                  />
-                </Popconfirm>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <div
+                          {...attributes}
+                          {...listeners}
+                          className="cursor-move p-1.5 hover:bg-gray-100 rounded-md transition-all duration-200 border border-gray-200/60"
+                        >
+                          <DragOutlined className="text-gray-400 text-sm" />
+                        </div>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => onEdit(bookmark)}
+                          className="hover:bg-gray-100 rounded-md transition-all duration-200 border border-gray-200/60"
+                        />
+                        <Popconfirm
+                          title="确定删除这个书签吗？"
+                          onConfirm={() => onDelete(bookmark.id)}
+                          okText="删除"
+                          cancelText="取消"
+                        >
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-all duration-200 border border-red-200/60"
+                          />
+                        </Popconfirm>
+                      </div>
             </div>
           </div>
         </div>
@@ -556,6 +585,9 @@ const MainPage: React.FC = () => {
   const [editBookmarkTitle, setEditBookmarkTitle] = useState("");
   const [editBookmarkUrl, setEditBookmarkUrl] = useState("");
   const [editBookmarkTags, setEditBookmarkTags] = useState<string>("");
+  // 书签折叠控制：默认从设置中读取
+  const [collapsedInFolderView, setCollapsedInFolderView] = useState<boolean>(true);
+  const [collapsedInAllView, setCollapsedInAllView] = useState<boolean>(true);
   
   // 目录（侧边锚点）折叠与当前高亮
   const [tocCollapsed, setTocCollapsed] = useState(false);
@@ -574,6 +606,24 @@ const MainPage: React.FC = () => {
 
   useEffect(() => {
     loadBookmarks();
+  }, []);
+
+  // 读取默认折叠设置（预览环境下保持默认 true）
+  useEffect(() => {
+    const anyWindow = globalThis as any;
+    if (!anyWindow?.chrome?.storage?.sync) {
+      setCollapsedInFolderView(true);
+      setCollapsedInAllView(true);
+      return;
+    }
+    chrome.storage.sync
+      .get({ defaultBookmarksCollapsed: true })
+      .then(({ defaultBookmarksCollapsed }) => {
+        const v = !!defaultBookmarksCollapsed;
+        setCollapsedInFolderView(v);
+        setCollapsedInAllView(v);
+      })
+      .catch(() => {});
   }, []);
 
   // 根据可见区域高亮对应的目录项
@@ -1328,7 +1378,7 @@ const MainPage: React.FC = () => {
         </div>
       </Header>
 
-      <Content className="max-w-6xl mx-auto p-8 relative width-full">
+      <Content className="max-w-7xl mx-auto p-8 relative w-full">
         {/* 背景装饰元素 */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl"></div>
@@ -1455,7 +1505,15 @@ const MainPage: React.FC = () => {
                         (包含子文件夹)
                       </span>
                     )}
+                    <button
+                      className="ml-auto text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
+                      onClick={() => setCollapsedInFolderView((v) => !v)}
+                      title={collapsedInFolderView ? "展开书签" : "折叠书签"}
+                    >
+                      {collapsedInFolderView ? "展开" : "折叠"}
+                    </button>
                   </h3>
+                  {!collapsedInFolderView && (
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1486,6 +1544,7 @@ const MainPage: React.FC = () => {
                       </div>
                     </SortableContext>
                   </DndContext>
+                  )}
                 </div>
               )}
 
@@ -1541,7 +1600,15 @@ const MainPage: React.FC = () => {
                     <span className="text-sm text-gray-500 bg-gray-100/60 px-3 py-1 rounded-xl border border-gray-200/50">
                       (包含所有文件夹)
                     </span>
+                    <button
+                      className="ml-auto text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
+                      onClick={() => setCollapsedInAllView((v) => !v)}
+                      title={collapsedInAllView ? "展开书签" : "折叠书签"}
+                    >
+                      {collapsedInAllView ? "展开" : "折叠"}
+                    </button>
                   </h3>
+                  {!collapsedInAllView && (
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1566,6 +1633,7 @@ const MainPage: React.FC = () => {
                       </div>
                     </SortableContext>
                   </DndContext>
+                  )}
                 </div>
               )}
 
