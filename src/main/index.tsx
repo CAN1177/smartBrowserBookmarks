@@ -50,6 +50,21 @@ import { getMessage } from "../shared/i18n";
 // 简化本地取文案
 const t = (key: string) => getMessage(key);
 
+// 将常见根目录名称映射为当前语言文案
+function localizeFolderTitle(title: string): string {
+  const lower = title.toLowerCase();
+  if (title === '书签栏' || lower.includes('bookmarks bar') || lower === 'bookmarks' || lower === 'bookmark bar') {
+    return t('bookmarksBar');
+  }
+  if (title === '其他书签' || lower.includes('other bookmarks')) {
+    return t('otherBookmarks');
+  }
+  if (title === '移动设备书签' || lower.includes('mobile bookmarks')) {
+    return t('mobileBookmarks');
+  }
+  return title;
+}
+
 const { Header, Content } = Layout;
 
 interface BookmarkItem {
@@ -166,15 +181,15 @@ const SortableFolderCard: React.FC<{
               </div>
               <div>
                 <div className="font-bold text-2xl text-gray-800 group-hover:text-blue-600 transition-colors mb-2">
-                  {folder.title}
+                  {localizeFolderTitle(folder.title)}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-gray-200/50 shadow-sm">
-                    📄 {folder.children.length} 个书签
+                    📄 {folder.children.length} {t('bookmarks')}
                   </span>
                   {folder.childFolders.length > 0 && (
                     <span className="text-sm text-blue-600 bg-blue-100/80 backdrop-blur-sm px-4 py-2 rounded-2xl border border-blue-200/50 shadow-sm">
-                      📁 + {folder.childFolders.length} 个子文件夹
+                      📁 + {folder.childFolders.length} {t('subfolders')}
                     </span>
                   )}
                 </div>
@@ -226,19 +241,19 @@ const SortableFolderCard: React.FC<{
                   <FolderOutlined className="text-blue-600 text-lg" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-blue-800 font-medium hover:text-blue-600">
-                      {subFolder.title}
+                      {localizeFolderTitle(subFolder.title)}
                     </div>
                     <div className="text-xs text-blue-600">
-                      {subFolder.children.length} 个书签
+                      {subFolder.children.length} {t('bookmarks')}
                       {subFolder.childFolders.length > 0 && (
                         <span className="ml-1">
-                          + {subFolder.childFolders.length} 个子文件夹
+                          + {subFolder.childFolders.length} {t('subfolders')}
                         </span>
                       )}
                     </div>
                   </div>
                   <span className="text-xs text-blue-500 bg-blue-200 px-2 py-1 rounded">
-                    文件夹
+                    {t('folders')}
                   </span>
                 </div>
               ))}
@@ -351,7 +366,7 @@ const SortableFolderCard: React.FC<{
                     className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
                     onClick={() => setFolderPreviewCollapsed(false)}
                   >
-                    展开更多 ({previewChildren.length - 3})
+                    {t('expandMore')} ({previewChildren.length - 3})
                   </button>
                 </div>
               )}
@@ -1368,7 +1383,7 @@ const MainPage: React.FC = () => {
               onClick={openCreateFolder}
               className="rounded-xl"
             >
-              新建文件夹
+              {t('newFolder')}
             </Button>
             <Button
               type="text"
@@ -1376,7 +1391,7 @@ const MainPage: React.FC = () => {
               onClick={() => chrome.runtime.openOptionsPage()}
               className="hover:bg-gray-100 rounded-xl transition-all duration-200"
             >
-              设置
+              {t('settings')}
             </Button>
           </div>
         </div>
@@ -1424,10 +1439,10 @@ const MainPage: React.FC = () => {
                 </div>
 
                 <div className="ml-4 bg-gradient-to-r from-blue-100/80 to-indigo-100/80 backdrop-blur-sm px-3 py-1 rounded-xl border border-blue-200/50 shadow-sm">
-                  <span className="text-sm text-blue-700 font-medium">
-                    📄 {selectedFolder.children.length} {t('bookmarks')}
-                  </span>
-                </div>
+                    <span className="text-sm text-blue-700 font-medium">
+                      📄 {selectedFolder.children.length} {t('bookmarks')}
+                    </span>
+                  </div>
               </div>
             </div>
           )}
@@ -1437,7 +1452,7 @@ const MainPage: React.FC = () => {
               <div className="inline-flex items-center space-x-3 bg-white/80 backdrop-blur-sm px-6 py-4 rounded-2xl border border-white/40 shadow-lg">
                 <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 <div className="text-lg text-gray-700 font-medium">
-                  加载中...
+                  {t('loading')}
                 </div>
               </div>
             </div>
@@ -1450,13 +1465,13 @@ const MainPage: React.FC = () => {
                   <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <div className="w-2 h-8 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-sm"></div>
                     <span className="bg-blue-100/60 px-4 py-2 rounded-2xl text-blue-700 border border-blue-200/50">
-                      📁 子文件夹 ({getFilteredSubFolders().length})
+                      📁 {t('subfolders')} ({getFilteredSubFolders().length})
                     </span>
                     {searchQuery &&
                       selectedFolder.childFolders.length >
                         getFilteredSubFolders().length && (
                         <span className="text-sm text-gray-500 bg-gray-100/60 px-3 py-1 rounded-xl border border-gray-200/50">
-                          (共 {selectedFolder.childFolders.length} 个)
+                          ({selectedFolder.childFolders.length})
                         </span>
                       )}
                   </h3>
@@ -1498,7 +1513,7 @@ const MainPage: React.FC = () => {
                   <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <div className="w-2 h-8 bg-gradient-to-b from-green-500 via-emerald-500 to-teal-500 rounded-full shadow-sm"></div>
                     <span className="bg-green-100/60 px-4 py-2 rounded-2xl text-green-700 border border-green-200/50">
-                      📄 书签 (
+                      📄 {t('bookmarks')} (
                       {searchQuery
                         ? getAllFilteredBookmarks().length
                         : getFilteredBookmarks().length}
@@ -1506,7 +1521,7 @@ const MainPage: React.FC = () => {
                     </span>
                     {searchQuery && (
                       <span className="text-sm text-gray-500 bg-gray-100/60 px-3 py-1 rounded-xl border border-gray-200/50">
-                        (包含子文件夹)
+                        ({t('includingSubfolders')})
                       </span>
                     )}
                     <button
@@ -1564,16 +1579,16 @@ const MainPage: React.FC = () => {
                     <div className="text-center space-y-4 max-w-md">
                       <div className="text-3xl font-bold bg-gradient-to-r from-gray-700 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         {searchQuery
-                          ? "没有找到匹配的内容"
+                          ? t('noMatchingContent')
                           : selectedFolder.childFolders.length === 0 &&
                             selectedFolder.children.length === 0
-                          ? "此文件夹为空"
-                          : "没有找到匹配的内容"}
+                          ? t('emptyFolder')
+                          : t('noMatchingContent')}
                       </div>
                       <div className="text-lg text-gray-500 leading-relaxed">
                         {searchQuery
-                          ? "尝试使用不同的关键词搜索，或检查拼写是否正确"
-                          : "这个文件夹还没有任何内容，您可以从浏览器添加书签"}
+                          ? t('tryDifferentKeywords')
+                          : t('folderEmptyHint')}
                       </div>
                     </div>
                     <div className="flex items-center justify-center space-x-2 text-gray-400">
@@ -1599,10 +1614,10 @@ const MainPage: React.FC = () => {
                   <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <div className="w-2 h-8 bg-gradient-to-b from-green-500 via-emerald-500 to-teal-500 rounded-full shadow-sm"></div>
                     <span className="bg-green-100/60 px-4 py-2 rounded-2xl text-green-700 border border-green-200/50">
-                      📄 书签 ({getAllFilteredBookmarks().length})
+                      📄 {t('bookmarks')} ({getAllFilteredBookmarks().length})
                     </span>
                     <span className="text-sm text-gray-500 bg-gray-100/60 px-3 py-1 rounded-xl border border-gray-200/50">
-                      (包含所有文件夹)
+                      ({t('includingAllFolders')})
                     </span>
                     <button
                       className="ml-auto text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100"
@@ -1680,22 +1695,20 @@ const MainPage: React.FC = () => {
                         </div>
                         <div className="text-center space-y-6 max-w-lg">
                           <div className="text-4xl font-bold bg-gradient-to-r from-slate-700 via-blue-600 to-indigo-700 bg-clip-text text-transparent leading-tight">
-                            {searchQuery
-                              ? "没有找到匹配的内容"
-                              : "欢迎使用智能书签管理"}
+                            {t('noMatchingContent')}
                           </div>
                           <div className="text-xl text-gray-500 leading-relaxed px-4">
                             {searchQuery
-                              ? "尝试使用不同的关键词搜索，或浏览所有文件夹查找您需要的内容"
-                              : "您还没有创建任何文件夹。开始使用浏览器收藏夹功能，让我们帮您更好地管理书签！"}
+                              ? t('tryDifferentKeywords')
+                              : t('folderEmptyHint')}
                           </div>
                           {!searchQuery && (
                             <div className="bg-gradient-to-r from-blue-100/80 via-indigo-100/80 to-purple-100/80 backdrop-blur-sm rounded-2xl p-6 border border-blue-200/50 shadow-lg">
                               <div className="text-sm text-blue-700 font-medium mb-2">
-                                💡 小贴士
+                                💡 {t('tips')}
                               </div>
                               <div className="text-sm text-blue-600 leading-relaxed">
-                                在浏览器中创建书签文件夹，然后刷新此页面即可开始管理您的智能书签
+                                {t('createFolderGuide')}
                               </div>
                             </div>
                           )}
@@ -1729,18 +1742,18 @@ const MainPage: React.FC = () => {
           <div className="hidden xl:block fixed right-0 2xl:right-8 top-24 z-40 pointer-events-auto">
               <div className="w-52 2xl:w-64 bg-white/95 backdrop-blur rounded-xl shadow-lg border border-gray-200 overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4">
-                <div className="text-2xl font-bold text-gray-900">目录</div>
+                <div className="text-2xl font-bold text-gray-900">{t('directory')}</div>
                 <button
                   className="text-gray-500 hover:text-gray-700 text-sm inline-flex items-center gap-1"
                   onClick={() => setTocCollapsed((v) => !v)}
                 >
                   {tocCollapsed ? (
                     <>
-                      展开 <DownOutlined />
+                      {t('expand')} <DownOutlined />
                     </>
                   ) : (
                     <>
-                      收起 <UpOutlined />
+                      {t('collapse')} <UpOutlined />
                     </>
                   )}
                 </button>
@@ -1786,7 +1799,7 @@ const MainPage: React.FC = () => {
             icon={<SettingOutlined />}
             onClick={goToSettings}
             className="!w-12 !h-12 flex items-center justify-center bg-white/95 hover:bg-gray-100 shadow-xl border border-gray-200"
-            title="去设置页"
+            title={t('goToSettings')}
           />
           <Button
             shape="circle"
@@ -1794,43 +1807,43 @@ const MainPage: React.FC = () => {
             icon={<ArrowUpOutlined />}
             onClick={scrollToTop}
             className="!w-12 !h-12 flex items-center justify-center bg-white/95 hover:bg-gray-100 shadow-xl border border-gray-200"
-            title="回到顶部"
+            title={t('backToTop')}
           />
         </div>
       </Content>
 
       {/* 新建文件夹 */}
       <Modal
-        title="新建文件夹"
+        title={t('createFolder')}
         open={showCreateFolderModal}
         onOk={submitCreateFolder}
         onCancel={() => setShowCreateFolderModal(false)}
-        okText="创建"
-        cancelText="取消"
+        okText={t('create')}
+        cancelText={t('cancel')}
       >
         <div className="space-y-3">
           <Input
-            placeholder="文件夹名称"
+            placeholder={t('folderName')}
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
           />
           <div className="text-sm text-gray-500">
-            将创建在：{selectedFolder ? selectedFolder.title : "书签栏"}
+            {selectedFolder ? selectedFolder.title : t('bookmarksBar')}
           </div>
         </div>
       </Modal>
 
       {/* 编辑文件夹 */}
       <Modal
-        title="重命名文件夹"
+        title={t('renameFolder')}
         open={showEditFolderModal}
         onOk={submitEditFolder}
         onCancel={() => setShowEditFolderModal(false)}
-        okText="保存"
-        cancelText="取消"
+        okText={t('save')}
+        cancelText={t('cancel')}
       >
         <Input
-          placeholder="文件夹名称"
+          placeholder={t('folderName')}
           value={editFolderName}
           onChange={(e) => setEditFolderName(e.target.value)}
         />
@@ -1838,26 +1851,26 @@ const MainPage: React.FC = () => {
 
       {/* 编辑书签 */}
       <Modal
-        title="编辑书签"
+        title={t('editBookmark')}
         open={showEditBookmarkModal}
         onOk={submitEditBookmark}
         onCancel={() => setShowEditBookmarkModal(false)}
-        okText="保存"
-        cancelText="取消"
+        okText={t('save')}
+        cancelText={t('cancel')}
       >
         <div className="space-y-3">
           <Input
-            placeholder="标题"
+            placeholder={t('title')}
             value={editBookmarkTitle}
             onChange={(e) => setEditBookmarkTitle(e.target.value)}
           />
           <Input
-            placeholder="URL"
+            placeholder={t('url')}
             value={editBookmarkUrl}
             onChange={(e) => setEditBookmarkUrl(e.target.value)}
           />
           <Input
-            placeholder="标签（逗号分隔，可选）"
+            placeholder={t('tagsOptional')}
             value={editBookmarkTags}
             onChange={(e) => setEditBookmarkTags(e.target.value)}
           />
