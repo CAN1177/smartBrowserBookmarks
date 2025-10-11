@@ -1,14 +1,14 @@
 {
   "extensionName": {
-    "message": "Smart Browser Bookmarks",
+    "message": "RecallPin",
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Smart bookmark extension with keyword extraction, intelligent search and history management",
+    "message": "Smart bookmarks for fast recall and pinning (Pin) of pages",
     "description": "Extension description"
   },
   "optionsTitle": {
-    "message": "Smart Bookmarks Settings",
+    "message": "RecallPin Settings",
     "description": "Options page title"
   },
   "optionsDescription": {

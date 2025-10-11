@@ -16,9 +16,9 @@ export const LANGUAGE_STORAGE_KEY = 'selectedLanguage';
 // 本地消息数据库
 const MESSAGES = {
   zh_CN: {
-    extensionName: '智能收藏夹',
-    extensionDescription: '智能收藏夹插件，支持关键词提取、智能搜索和历史记录管理',
-    optionsTitle: 'Smart Bookmarks 设置',
+    extensionName: 'RecallPin',
+    extensionDescription: '支持快速检索（Recall）与钉住（Pin）的智能书签扩展',
+    optionsTitle: 'RecallPin 设置',
     optionsDescription: '配置 Dify 工作流以在弹窗收藏书签时自动生成关键词。',
     languageSettings: '语言设置',
     selectLanguage: '选择语言',
@@ -135,9 +135,9 @@ const MESSAGES = {
     editBookmark: '编辑书签'
   },
   en: {
-    extensionName: 'Smart Browser Bookmarks',
-    extensionDescription: 'Smart bookmark extension with keyword extraction, intelligent search and history management',
-    optionsTitle: 'Smart Bookmarks Settings',
+    extensionName: 'RecallPin',
+    extensionDescription: 'Smart bookmarks for fast recall and pinning (Pin) of pages',
+    optionsTitle: 'RecallPin Settings',
     optionsDescription: 'Configure Dify workflow to automatically generate keywords when bookmarking pages in popup.',
     languageSettings: 'Language Settings',
     selectLanguage: 'Select Language',

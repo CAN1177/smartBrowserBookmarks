@@ -1,14 +1,14 @@
 {
   "extensionName": {
-    "message": "智能收藏夹",
+    "message": "RecallPin",
     "description": "扩展程序名称"
   },
   "extensionDescription": {
-    "message": "智能收藏夹插件，支持关键词提取、智能搜索和历史记录管理",
+    "message": "支持快速检索（Recall）与钉住（Pin）的智能书签扩展",
     "description": "扩展程序描述"
   },
   "optionsTitle": {
-    "message": "Smart Bookmarks 设置",
+    "message": "RecallPin 设置",
     "description": "设置页面标题"
   },
   "optionsDescription": {

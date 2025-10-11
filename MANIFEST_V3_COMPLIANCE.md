@@ -2,7 +2,7 @@
 
 ## 概述
 
-您的 Smart Browser Bookmarks 插件已成功更新至符合最新的 Chrome 扩展程序 Manifest V3 规范。插件现在完全符合 Chrome 网上应用店的发布要求。
+您的 RecallPin 插件已成功更新至符合最新的 Chrome 扩展程序 Manifest V3 规范。插件现在完全符合 Chrome 网上应用店的发布要求。
 
 ## 已完成的更新
 

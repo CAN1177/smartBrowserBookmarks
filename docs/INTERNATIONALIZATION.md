@@ -2,7 +2,7 @@
 
 ## 概述
 
-Smart Browser Bookmarks 扩展程序现已支持多语言国际化功能，用户可以在中文和英文之间自由切换。本功能基于 Chrome 扩展的 `chrome.i18n` API 实现，符合 Manifest V3 规范。
+RecallPin 扩展程序现已支持多语言国际化功能，用户可以在中文和英文之间自由切换。本功能基于 Chrome 扩展的 `chrome.i18n` API 实现，符合 Manifest V3 规范。
 
 ## 功能特性
 

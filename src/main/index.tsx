@@ -1363,7 +1363,7 @@ const MainPage: React.FC = () => {
               <GlobalOutlined className="text-xl text-white" />
             </div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent m-0">
-              Smart Bookmarks
+              {t('extensionName')}
             </h1>
           </div>
           <div className="flex items-center space-x-4">

@@ -1,6 +1,6 @@
-# Smart Browser Bookmarks
+# RecallPin
 
-智能浏览器收藏夹插件，提供智能分类、关键词提取、快速搜索等功能。
+RecallPin 是一款智能书签扩展，融合 Recall（快速检索）与 Pin（钉住）理念，提供智能分类、关键词提取、快速搜索等功能。
 
 ## 功能特性
 

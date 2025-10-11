@@ -1,7 +1,7 @@
 {
-  "name": "smart-browser-bookmarks",
+  "name": "RecallPin",
   "version": "1.0.0",
-  "description": "智能浏览器收藏夹插件",
+  "description": "Recall（快速检索）与 Pin（钉住）理念的智能书签扩展",
   "type": "module",
   "scripts": {
     "dev": "vite",

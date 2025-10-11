@@ -834,7 +834,7 @@ const App: React.FC = () => {
       <Header className="bg-white shadow-sm px-4 h-14 flex items-center">
         <div className="flex items-center justify-between w-full">
           <h1 className="text-lg font-semibold text-gray-800 m-0">
-            Smart Bookmarks
+            {t('extensionName')}
           </h1>
           <Space>
             <Button

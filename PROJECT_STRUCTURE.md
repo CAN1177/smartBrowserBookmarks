@@ -1,8 +1,8 @@
-# Smart Browser Bookmarks 项目结构说明
+# RecallPin 项目结构说明
 
 ## 项目概述
 
-Smart Browser Bookmarks 是一个智能浏览器收藏夹插件，提供智能分类、关键词提取、快速搜索等功能。项目采用现代前端技术栈，支持 Chrome 扩展 API。
+RecallPin 是一个智能书签扩展，融合 Recall（快速检索）与 Pin（钉住）理念，提供智能分类、关键词提取、快速搜索等功能。项目采用现代前端技术栈，支持 Chrome 扩展 API。
 
 ## 技术栈
 
@@ -69,7 +69,7 @@ smartBrowserBookmarks/
 ```json
 {
   "manifest_version": 3, // 使用Manifest V3
-  "name": "Smart Browser Bookmarks", // 插件名称
+  "name": "RecallPin", // 插件名称
   "permissions": [
     // 权限配置
     "storage",
