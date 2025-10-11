@@ -60,6 +60,8 @@ interface CurrentPageInfo {
   content: string;
 }
 
+const t = (key: string) => getMessage(key);
+
 const App: React.FC = () => {
   useLanguage(); // 初始化语言设置
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
@@ -715,14 +717,14 @@ const App: React.FC = () => {
       label: (
         <span>
           <SearchOutlined />
-          搜索
+          {t('search')}
         </span>
       ),
       children: (
         <div className="flex flex-col gap-4">
           <div className="relative">
             <Input
-              placeholder="搜索收藏夹..."
+              placeholder={t('searchBookmarks')}
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -783,7 +785,7 @@ const App: React.FC = () => {
               ))
             ) : (
               <div className="text-center py-8 text-gray-500">
-                {searchQuery ? "没有找到匹配的收藏" : "暂无收藏"}
+                {searchQuery ? t('noMatchingBookmarks') : t('noBookmarksYet')}
               </div>
             )}
           </div>
@@ -795,17 +797,17 @@ const App: React.FC = () => {
       label: (
         <span>
           <AppstoreOutlined />
-          浏览
+          {t('browse')}
         </span>
       ),
       children: (
         <div className="flex flex-col gap-4">
           <div className="text-sm text-gray-600 mb-2">
-            点击文件夹展开，点击书签打开链接
+            {t('browseHint')}
           </div>
           <div className="flex-1 overflow-auto max-h-96 no-scrollbar">
             {loading ? (
-              <div className="text-center py-8 text-gray-500">加载中...</div>
+              <div className="text-center py-8 text-gray-500">{t('loading')}</div>
             ) : bookmarkTree.length > 0 ? (
               <Tree
                 treeData={bookmarkTree}
@@ -819,7 +821,7 @@ const App: React.FC = () => {
                 onRightClick={handleTreeRightClick}
               />
             ) : (
-              <div className="text-center py-8 text-gray-500">暂无书签</div>
+              <div className="text-center py-8 text-gray-500">{t('noBookmarksYet')}</div>
             )}
           </div>
         </div>
@@ -844,18 +846,17 @@ const App: React.FC = () => {
                 })
               }
               size="small"
-              title={getMessage('openMainInterface')}
-            >
-              {getMessage('openMainInterface')}
-            </Button>
+              title={t('openMainInterface')}
+              aria-label={t('openMainInterface')}
+            />
             <Button
               type="text"
               icon={<SettingOutlined />}
               size="small"
               onClick={() => chrome.runtime.openOptionsPage?.()}
-            >
-              {getMessage('settings')}
-            </Button>
+              title={t('settings')}
+              aria-label={t('settings')}
+            />
           </Space>
         </div>
       </Header>
@@ -877,7 +878,7 @@ const App: React.FC = () => {
               className="w-full"
               onClick={getCurrentPageInfo}
             >
-              {getMessage('addCurrentPage')}
+              {t('addCurrentPage')}
             </Button>
           </div>
         </div>
@@ -993,7 +994,7 @@ const App: React.FC = () => {
                   <span className="text-xs text-gray-400">已在设置中关闭</span>
                 )}
                 {useDifyKeyword && !difyApiKey && (
-                  <span className="text-xs text-red-400">未配置 API Key</span>
+                  <span className="text-xs text-red-400">{t('apiKeyNotConfigured')}</span>
                 )}
               </Space>
             </div>
@@ -1003,7 +1004,7 @@ const App: React.FC = () => {
               currentPageInfo.keywords.length > 0 && (
                 <div className="mb-4">
                   <div className="text-sm text-gray-600 mb-2">
-                    自动提取的关键词（共 {currentPageInfo.keywords.length} 个）：
+                    {t('autoExtractedKeywords')} ({currentPageInfo.keywords.length})
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {currentPageInfo.keywords.map((keyword, index) => (
@@ -1025,7 +1026,7 @@ const App: React.FC = () => {
                     ))}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    点击标签可添加到关键词字段
+                    {t('clickTagToAdd')}
                   </div>
                 </div>
               )}
