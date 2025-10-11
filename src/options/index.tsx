@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { ConfigProvider, Form, Input, Switch, Button, Space, Typography, Divider, message, Select } from "antd";
+import { ConfigProvider, Form, /* Input, */ Switch, Button, Space, Typography, Divider, message, Select } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import enUS from "antd/locale/en_US";
 import "../popup/index.css";
@@ -11,7 +11,7 @@ import {
 } from "../shared/i18n";
 import { useLanguage } from "../shared/i18n/useLanguage";
 
-const { Title, Paragraph } = Typography as any;
+const { Title } = Typography as any;
 
 const DEFAULT_DIFY_BASE = "https://api.dify.ai";
 
@@ -87,10 +87,9 @@ const Options: React.FC = () => {
       <Title level={3} style={{ marginBottom: 8 }}>
         {getMessage('optionsTitle')}
       </Title>
-      <Paragraph type="secondary" style={{ marginTop: 0 }}>
+      {/* <Paragraph type="secondary" style={{ marginTop: 0 }}>
         {getMessage('optionsDescription')}
-      </Paragraph>
-
+      </Paragraph> */}
       <Divider />
 
       <Form form={form} layout="vertical">
@@ -123,6 +122,7 @@ const Options: React.FC = () => {
           <Switch onChange={(checked) => { form.setFieldValue("defaultBookmarksCollapsed", checked); handleSave(); }} />
         </Form.Item>
 
+        {/* 暂时隐藏 Dify 相关设置（仅注释，不删除）
         <Form.Item
           name="useDifyKeyword"
           label={getMessage('useDifyKeyword')}
@@ -155,17 +155,20 @@ const Options: React.FC = () => {
         >
           <Input placeholder="sb-extension" />
         </Form.Item>
+        */}
 
         <Space>
           <Button type="primary" loading={saving} onClick={handleSave}>
             {getMessage('saveSettings')}
           </Button>
+          {/* 暂时隐藏 Dify 入口链接（仅注释，不删除）
           <Button
             type="link"
             onClick={() => window.open("https://cloud.dify.ai/app/dccbbc41-c4c1-4d27-b0a2-16812eba5781/develop", "_blank")}
           >
             {getMessage('visitDifyWorkflow')}
           </Button>
+          */}
         </Space>
       </Form>
     </div>

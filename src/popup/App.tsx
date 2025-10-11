@@ -89,12 +89,17 @@ const App: React.FC = () => {
   const [newFolderNameBrowse, setNewFolderNameBrowse] = useState<string>("");
 
   // Dify 设置与状态
+  /* 暂时隐藏 Dify 设置状态（仅注释，不删除）
   const [useDifyKeyword, setUseDifyKeyword] = useState<boolean>(false);
   const [difyApiKey, setDifyApiKey] = useState<string>("");
   const [difyBaseUrl, setDifyBaseUrl] = useState<string>("https://api.dify.ai");
   const [difyUserId, setDifyUserId] = useState<string>("sb-extension");
+  */
+  /* 暂时隐藏 Dify 相关状态（仅注释，不删除）
   const [difyLoading, setDifyLoading] = useState<boolean>(false);
+  */
 
+  /* 暂时隐藏 Dify 设置读取（仅注释，不删除）
   useEffect(() => {
     // 读取设置（在非扩展环境下忽略，便于预览）
     const anyWindow = globalThis as any;
@@ -114,11 +119,13 @@ const App: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+  */
 
   useEffect(() => {
     loadBookmarks();
   }, []);
 
+  /* 暂时隐藏 Dify 关键词生成函数（仅注释，不删除）
   // 使用 Dify 生成关键词
   const generateKeywordsWithDify = async () => {
     try {
@@ -204,6 +211,7 @@ const App: React.FC = () => {
       setDifyLoading(false);
     }
   };
+  */
 
   const loadBookmarks = async () => {
     setLoading(true);
@@ -981,6 +989,7 @@ const App: React.FC = () => {
               />
             </Form.Item>
             <div className="-mt-2 mb-3">
+              {/* 暂时隐藏 Dify 关键词按钮及提示（仅注释，不删除）
               <Space size="small">
                 <Button
                   size="small"
@@ -997,6 +1006,7 @@ const App: React.FC = () => {
                   <span className="text-xs text-red-400">{t('apiKeyNotConfigured')}</span>
                 )}
               </Space>
+              */}
             </div>
 
             {currentPageInfo &&
