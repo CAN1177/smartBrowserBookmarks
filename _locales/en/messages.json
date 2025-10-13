@@ -90,5 +90,9 @@
   "quickSearchBookmarks": {
     "message": "Quick search bookmarks",
     "description": "Quick search command description"
+  },
+  "quickBookmarkPage": {
+    "message": "Quick bookmark current page",
+    "description": "Quick bookmark command description"
   }
 }

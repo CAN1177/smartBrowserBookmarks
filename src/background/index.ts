@@ -43,12 +43,17 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 // 监听快捷键命令
-chrome.commands.onCommand.addListener((command) => {
+chrome.commands.onCommand.addListener(async (command) => {
   console.log("快捷键命令:", command);
 
   switch (command) {
     case "quick_search":
       // 打开搜索界面
+      chrome.action.openPopup();
+      break;
+    case "quick_bookmark":
+      // 快速收藏当前页面 - 打开弹窗并传递参数
+      await chrome.storage.local.set({ autoOpenAddBookmark: true });
       chrome.action.openPopup();
       break;
   }
@@ -143,7 +148,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
                   } else {
                     resolve(response);
                   }
-                }
+                },
               );
             });
 
@@ -163,7 +168,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
             // 如果内容脚本不可用，使用基本关键词生成
             const basicKeywords = generateBasicKeywords(
               tab.title || "",
-              tab.url || ""
+              tab.url || "",
             );
 
             console.log("使用基本关键词:", basicKeywords);
@@ -234,7 +239,9 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         .move(String(request.id), {
           parentId: String(request.parentId),
           index:
-            typeof request.index === "number" ? Number(request.index) : undefined,
+            typeof request.index === "number"
+              ? Number(request.index)
+              : undefined,
         })
         .then((result) => {
           sendResponse({ success: true, data: result });

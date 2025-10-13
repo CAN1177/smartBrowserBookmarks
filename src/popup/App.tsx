@@ -79,7 +79,7 @@ const App: React.FC = () => {
   // 仅在 TreeSelect 中展开顶层节点，提高性能
   const topLevelFolderKeys = useMemo(
     () => (folderTreeData || []).map((n: any) => n.value ?? n.key),
-    [folderTreeData]
+    [folderTreeData],
   );
   // 浏览页签右键新建文件夹所需状态
   const [showNewFolderModalBrowse, setShowNewFolderModalBrowse] =
@@ -123,7 +123,20 @@ const App: React.FC = () => {
 
   useEffect(() => {
     loadBookmarks();
+    checkAutoOpenAddBookmark();
   }, []);
+
+  const checkAutoOpenAddBookmark = async () => {
+    try {
+      const result = await chrome.storage.local.get("autoOpenAddBookmark");
+      if (result.autoOpenAddBookmark) {
+        await chrome.storage.local.remove("autoOpenAddBookmark");
+        getCurrentPageInfo();
+      }
+    } catch (error) {
+      console.error("检查自动打开失败:", error);
+    }
+  };
 
   /* 暂时隐藏 Dify 关键词生成函数（仅注释，不删除）
   // 使用 Dify 生成关键词
@@ -249,7 +262,7 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error("加载书签失败:", error);
-      message.error(getMessage('loadBookmarksFailed'));
+      message.error(getMessage("loadBookmarksFailed"));
     } finally {
       setLoading(false);
     }
@@ -311,7 +324,7 @@ const App: React.FC = () => {
         word.length > 2 &&
         word.length < 20 &&
         !word.match(/^(https?|www\.|\.com|\.org|\.net|chrome|newtab)/) && // 排除URL和特殊页面
-        !word.match(/^[0-9]+$/) // 排除纯数字
+        !word.match(/^[0-9]+$/), // 排除纯数字
     );
 
     if (potentialKeywords.length > 0) {
@@ -325,7 +338,7 @@ const App: React.FC = () => {
   };
 
   const flattenBookmarkTree = (
-    node: chrome.bookmarks.BookmarkTreeNode
+    node: chrome.bookmarks.BookmarkTreeNode,
   ): BookmarkItem[] => {
     const result: BookmarkItem[] = [];
 
@@ -340,7 +353,7 @@ const App: React.FC = () => {
           new URL(node.url).hostname
         }`,
         tags: keywords, // 使用解析出的关键词作为标签
-        category: getMessage('defaultCategory'),
+        category: getMessage("defaultCategory"),
         dateAdded: node.dateAdded,
         visitCount: getVisitCountFromTitle(node.title),
       });
@@ -356,7 +369,7 @@ const App: React.FC = () => {
   };
 
   const convertToTreeNodes = (
-    node: chrome.bookmarks.BookmarkTreeNode
+    node: chrome.bookmarks.BookmarkTreeNode,
   ): TreeNode => {
     if (node.url) {
       // 这是一个书签
@@ -380,12 +393,12 @@ const App: React.FC = () => {
       const folderTitle =
         node.title ||
         (node.id === "1"
-          ? getMessage('bookmarksBar')
-        : node.id === "2"
-        ? getMessage('otherBookmarks')
-        : node.id === "3"
-        ? getMessage('mobileBookmarks')
-        : getMessage('unnamedFolder'));
+          ? getMessage("bookmarksBar")
+          : node.id === "2"
+            ? getMessage("otherBookmarks")
+            : node.id === "3"
+              ? getMessage("mobileBookmarks")
+              : getMessage("unnamedFolder"));
       return {
         key: node.id,
         title: folderTitle,
@@ -397,7 +410,7 @@ const App: React.FC = () => {
   };
 
   const extractFolders = (
-    node: chrome.bookmarks.BookmarkTreeNode
+    node: chrome.bookmarks.BookmarkTreeNode,
   ): { id: string; title: string }[] => {
     const folders: { id: string; title: string }[] = [];
 
@@ -408,12 +421,12 @@ const App: React.FC = () => {
         title:
           node.title ||
           (node.id === "0"
-            ? getMessage('rootDirectory')
-        : node.id === "1"
-        ? getMessage('bookmarksBar')
-        : node.id === "2"
-        ? getMessage('otherBookmarks')
-        : getMessage('unnamedFolder')),
+            ? getMessage("rootDirectory")
+            : node.id === "1"
+              ? getMessage("bookmarksBar")
+              : node.id === "2"
+                ? getMessage("otherBookmarks")
+                : getMessage("unnamedFolder")),
       });
     }
 
@@ -440,7 +453,7 @@ const App: React.FC = () => {
         const newTitle = buildTitleWithCountAndTags(
           base,
           newCount,
-          parsed.keywords || []
+          parsed.keywords || [],
         );
         await chrome.bookmarks.update(id, { title: newTitle });
       }
@@ -448,7 +461,7 @@ const App: React.FC = () => {
       window.close(); // 关闭弹窗
     } catch (error) {
       console.error("打开链接失败:", error);
-      message.error(getMessage('openLinkFailed'));
+      message.error(getMessage("openLinkFailed"));
     }
   };
 
@@ -487,11 +500,11 @@ const App: React.FC = () => {
 
         setShowAddModal(true);
       } else {
-          message.error(getMessage('getPageInfoFailed'));
-        }
-      } catch (error) {
-        console.error("获取页面信息失败:", error);
-        message.error(getMessage('getPageInfoFailed'));
+        message.error(getMessage("getPageInfoFailed"));
+      }
+    } catch (error) {
+      console.error("获取页面信息失败:", error);
+      message.error(getMessage("getPageInfoFailed"));
     }
   };
 
@@ -513,31 +526,31 @@ const App: React.FC = () => {
         // 重新加载书签列表
         loadBookmarks();
       } else {
-          message.error(getMessage('addBookmarkFailed'));
-        }
-      } catch (error) {
-        console.error("添加收藏失败:", error);
-        message.error(getMessage('addBookmarkFailed'));
+        message.error(getMessage("addBookmarkFailed"));
+      }
+    } catch (error) {
+      console.error("添加收藏失败:", error);
+      message.error(getMessage("addBookmarkFailed"));
     }
   };
 
   // 仅生成“文件夹”树，供 TreeSelect 使用
   const convertNodeToTreeSelect = (
-    node: chrome.bookmarks.BookmarkTreeNode
+    node: chrome.bookmarks.BookmarkTreeNode,
   ): any | null => {
     if (node.url) return null; // 仅保留文件夹
 
     const title =
       node.title ||
       (node.id === "0"
-        ? getMessage('rootDirectory')
+        ? getMessage("rootDirectory")
         : node.id === "1"
-        ? getMessage('bookmarksBar')
-        : node.id === "2"
-        ? getMessage('otherBookmarks')
-        : node.id === "3"
-        ? getMessage('mobileBookmarks')
-        : getMessage('unnamedFolder'));
+          ? getMessage("bookmarksBar")
+          : node.id === "2"
+            ? getMessage("otherBookmarks")
+            : node.id === "3"
+              ? getMessage("mobileBookmarks")
+              : getMessage("unnamedFolder"));
 
     const children = (node.children || [])
       .map((child) => convertNodeToTreeSelect(child))
@@ -552,7 +565,7 @@ const App: React.FC = () => {
   };
 
   const buildFolderTreeSelectData = (
-    root: chrome.bookmarks.BookmarkTreeNode
+    root: chrome.bookmarks.BookmarkTreeNode,
   ): any[] => {
     // 跳过根节点（id=0），使用其子节点作为顶层
     const topLevel = (root.children || [])
@@ -585,11 +598,11 @@ const App: React.FC = () => {
         form.setFieldValue("folder", createdId);
         localStorage.setItem(LAST_SELECTED_FOLDER_ID_KEY, String(createdId));
       } else {
-        message.error(getMessage('createFolderFailed'));
+        message.error(getMessage("createFolderFailed"));
       }
     } catch (error) {
       console.error("创建文件夹失败:", error);
-      message.error(getMessage('createFolderFailed'));
+      message.error(getMessage("createFolderFailed"));
     }
   };
 
@@ -605,7 +618,7 @@ const App: React.FC = () => {
 
   const handleConfirmCreateFolderInBrowse = async () => {
     if (!newFolderNameBrowse.trim() || !contextFolderId) {
-      message.error(getMessage('pleaseEnterFolderName'));
+      message.error(getMessage("pleaseEnterFolderName"));
       return;
     }
     try {
@@ -615,17 +628,17 @@ const App: React.FC = () => {
         parentId: contextFolderId,
       });
       if (response.success) {
-        message.success(getMessage('createFolderSuccess'));
+        message.success(getMessage("createFolderSuccess"));
         setShowNewFolderModalBrowse(false);
         setNewFolderNameBrowse("");
         // 刷新树
         loadBookmarks();
       } else {
-        message.error(getMessage('createFolderFailed'));
+        message.error(getMessage("createFolderFailed"));
       }
     } catch (e) {
       console.error(e);
-      message.error(getMessage('createFolderFailed'));
+      message.error(getMessage("createFolderFailed"));
     }
   };
 
@@ -709,7 +722,7 @@ const App: React.FC = () => {
         .sort(
           (a, b) =>
             (b.visitCount || 0) - (a.visitCount || 0) ||
-            (b.dateAdded || 0) - (a.dateAdded || 0)
+            (b.dateAdded || 0) - (a.dateAdded || 0),
         )
         .slice(0, 10);
     }
@@ -725,14 +738,14 @@ const App: React.FC = () => {
       label: (
         <span>
           <SearchOutlined />
-          {t('search')}
+          {t("search")}
         </span>
       ),
       children: (
         <div className="flex flex-col gap-4">
           <div className="relative">
             <Input
-              placeholder={t('searchBookmarks')}
+              placeholder={t("searchBookmarks")}
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -793,7 +806,7 @@ const App: React.FC = () => {
               ))
             ) : (
               <div className="text-center py-8 text-gray-500">
-                {searchQuery ? t('noMatchingBookmarks') : t('noBookmarksYet')}
+                {searchQuery ? t("noMatchingBookmarks") : t("noBookmarksYet")}
               </div>
             )}
           </div>
@@ -805,17 +818,17 @@ const App: React.FC = () => {
       label: (
         <span>
           <AppstoreOutlined />
-          {t('browse')}
+          {t("browse")}
         </span>
       ),
       children: (
         <div className="flex flex-col gap-4">
-          <div className="text-sm text-gray-600 mb-2">
-            {t('browseHint')}
-          </div>
+          <div className="text-sm text-gray-600 mb-2">{t("browseHint")}</div>
           <div className="flex-1 overflow-auto max-h-96 no-scrollbar">
             {loading ? (
-              <div className="text-center py-8 text-gray-500">{t('loading')}</div>
+              <div className="text-center py-8 text-gray-500">
+                {t("loading")}
+              </div>
             ) : bookmarkTree.length > 0 ? (
               <Tree
                 treeData={bookmarkTree}
@@ -829,7 +842,9 @@ const App: React.FC = () => {
                 onRightClick={handleTreeRightClick}
               />
             ) : (
-              <div className="text-center py-8 text-gray-500">{t('noBookmarksYet')}</div>
+              <div className="text-center py-8 text-gray-500">
+                {t("noBookmarksYet")}
+              </div>
             )}
           </div>
         </div>
@@ -842,7 +857,7 @@ const App: React.FC = () => {
       <Header className="bg-white shadow-sm px-4 h-14 flex items-center">
         <div className="flex items-center justify-between w-full">
           <h1 className="text-lg font-semibold text-gray-800 m-0">
-            {t('extensionName')}
+            {t("extensionName")}
           </h1>
           <Space>
             <Button
@@ -854,16 +869,16 @@ const App: React.FC = () => {
                 })
               }
               size="small"
-              title={t('openMainInterface')}
-              aria-label={t('openMainInterface')}
+              title={t("openMainInterface")}
+              aria-label={t("openMainInterface")}
             />
             <Button
               type="text"
               icon={<SettingOutlined />}
               size="small"
               onClick={() => chrome.runtime.openOptionsPage?.()}
-              title={t('settings')}
-              aria-label={t('settings')}
+              title={t("settings")}
+              aria-label={t("settings")}
             />
           </Space>
         </div>
@@ -886,54 +901,61 @@ const App: React.FC = () => {
               className="w-full"
               onClick={getCurrentPageInfo}
             >
-              {t('addCurrentPage')}
+              {t("addCurrentPage")}
             </Button>
           </div>
         </div>
 
         <Modal
-          title={getMessage('addBookmark')}
+          title={getMessage("addBookmark")}
           open={showAddModal}
           onCancel={() => {
             setShowAddModal(false);
             form.resetFields();
           }}
           onOk={() => form.submit()}
-          okText={getMessage('add')}
-          cancelText={getMessage('cancel')}
+          okText={getMessage("add")}
+          cancelText={getMessage("cancel")}
           width={500}
         >
           <Form form={form} layout="vertical" onFinish={handleAddBookmark}>
             <Form.Item
               name="title"
-              label={getMessage('title')}
-              rules={[{ required: true, message: getMessage('pleaseEnterTitle') }]}
+              label={getMessage("title")}
+              rules={[
+                { required: true, message: getMessage("pleaseEnterTitle") },
+              ]}
             >
-              <Input placeholder={getMessage('pageTitle')} />
+              <Input placeholder={getMessage("pageTitle")} />
             </Form.Item>
 
             <Form.Item
               name="url"
-              label={getMessage('url')}
-              rules={[{ required: true, message: getMessage('pleaseEnterUrl') }]}
+              label={getMessage("url")}
+              rules={[
+                { required: true, message: getMessage("pleaseEnterUrl") },
+              ]}
             >
               <Input placeholder="https://..." />
             </Form.Item>
 
-            <Form.Item name="description" label={getMessage('description')}>
-              <Input.TextArea placeholder={getMessage('pageDescriptionOptional')} rows={2} />
+            <Form.Item name="description" label={getMessage("description")}>
+              <Input.TextArea
+                placeholder={getMessage("pageDescriptionOptional")}
+                rows={2}
+              />
             </Form.Item>
 
-            <Form.Item name="folder" label={getMessage('saveToFolder')}>
+            <Form.Item name="folder" label={getMessage("saveToFolder")}>
               <TreeSelect
-                placeholder={getMessage('selectFolder')}
+                placeholder={getMessage("selectFolder")}
                 value={form.getFieldValue("folder") || "1"}
                 treeData={folderTreeData}
                 onChange={(value) => {
                   form.setFieldValue("folder", value);
                   localStorage.setItem(
                     LAST_SELECTED_FOLDER_ID_KEY,
-                    String(value)
+                    String(value),
                   );
                 }}
                 showSearch
@@ -951,12 +973,12 @@ const App: React.FC = () => {
                     <Divider style={{ margin: "8px 0" }} />
                     <Space style={{ padding: "0 8px 4px" }}>
                       <Input
-                        placeholder={getMessage('newFolderName')}
+                        placeholder={getMessage("newFolderName")}
                         value={newFolderName}
                         onChange={(e) => setNewFolderName(e.target.value)}
                         onPressEnter={() =>
                           handleCreateFolder(
-                            form.getFieldValue("folder") || "1"
+                            form.getFieldValue("folder") || "1",
                           )
                         }
                         style={{ width: "200px" }}
@@ -966,11 +988,11 @@ const App: React.FC = () => {
                         icon={<PlusOutlined />}
                         onClick={() =>
                           handleCreateFolder(
-                            form.getFieldValue("folder") || "1"
+                            form.getFieldValue("folder") || "1",
                           )
                         }
                       >
-                        {getMessage('create')}
+                        {getMessage("create")}
                       </Button>
                     </Space>
                   </>
@@ -978,10 +1000,10 @@ const App: React.FC = () => {
               />
             </Form.Item>
 
-            <Form.Item name="keywords" label={getMessage('keywords')}>
+            <Form.Item name="keywords" label={getMessage("keywords")}>
               <Select
                 mode="tags"
-                placeholder={getMessage('autoExtractedKeywordsEditable')}
+                placeholder={getMessage("autoExtractedKeywordsEditable")}
                 style={{ width: "100%" }}
                 tokenSeparators={[","]}
                 value={form.getFieldValue("keywords")}
@@ -1014,7 +1036,8 @@ const App: React.FC = () => {
               currentPageInfo.keywords.length > 0 && (
                 <div className="mb-4">
                   <div className="text-sm text-gray-600 mb-2">
-                    {t('autoExtractedKeywords')} ({currentPageInfo.keywords.length})
+                    {t("autoExtractedKeywords")} (
+                    {currentPageInfo.keywords.length})
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {currentPageInfo.keywords.map((keyword, index) => (
@@ -1036,7 +1059,7 @@ const App: React.FC = () => {
                     ))}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {t('clickTagToAdd')}
+                    {t("clickTagToAdd")}
                   </div>
                 </div>
               )}
@@ -1084,7 +1107,7 @@ const stripVisitCount = (title: string): string => {
 const buildTitleWithCountAndTags = (
   baseTitle: string,
   count: number,
-  tags: string[]
+  tags: string[],
 ): string => {
   const countStr = count > 0 ? ` (${count})` : "";
   const tagsStr = tags && tags.length ? ` #${tags.slice(0, 5).join(", ")}` : "";

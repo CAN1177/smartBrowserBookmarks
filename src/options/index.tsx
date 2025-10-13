@@ -1,13 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { ConfigProvider, Form, /* Input, */ Switch, Button, Space, Typography, Divider, message, Select } from "antd";
+import {
+  ConfigProvider,
+  Form,
+  /* Input, */ Switch,
+  Button,
+  Space,
+  Typography,
+  Divider,
+  message,
+  Select,
+} from "antd";
 import zhCN from "antd/locale/zh_CN";
 import enUS from "antd/locale/en_US";
 import "../popup/index.css";
-import { 
-  getMessage, 
+import {
+  getMessage,
   LANGUAGE_OPTIONS,
-  type SupportedLanguage 
+  type SupportedLanguage,
 } from "../shared/i18n";
 import { useLanguage } from "../shared/i18n/useLanguage";
 
@@ -25,8 +35,14 @@ const Options: React.FC = () => {
     (async () => {
       try {
         if (!isChromeExt) return; // 预览环境不读取设置
-        
-        const { useDifyKeyword, difyApiKey, difyBaseUrl, difyUserId, defaultBookmarksCollapsed } = await chrome.storage.sync.get({
+
+        const {
+          useDifyKeyword,
+          difyApiKey,
+          difyBaseUrl,
+          difyUserId,
+          defaultBookmarksCollapsed,
+        } = await chrome.storage.sync.get({
           useDifyKeyword: false,
           difyApiKey: "",
           difyBaseUrl: DEFAULT_DIFY_BASE,
@@ -49,12 +65,12 @@ const Options: React.FC = () => {
   const handleLanguageChange = async (language: SupportedLanguage) => {
     try {
       await changeLanguage(language);
-      message.success(getMessage('settingsSaved'));
+      message.success(getMessage("settingsSaved"));
       // 刷新页面以应用新语言
       window.location.reload();
     } catch (e) {
       console.error(e);
-      message.error(getMessage('saveFailed'));
+      message.error(getMessage("saveFailed"));
     }
   };
 
@@ -63,7 +79,7 @@ const Options: React.FC = () => {
       setSaving(true);
       const values = await form.validateFields();
       if (!isChromeExt) {
-        message.warning(getMessage('previewEnvironment'));
+        message.warning(getMessage("previewEnvironment"));
         return;
       }
       await chrome.storage.sync.set({
@@ -73,10 +89,10 @@ const Options: React.FC = () => {
         difyUserId: values.difyUserId || "sb-extension",
         defaultBookmarksCollapsed: !!values.defaultBookmarksCollapsed,
       });
-      message.success(getMessage('settingsSaved'));
+      message.success(getMessage("settingsSaved"));
     } catch (e) {
       console.error(e);
-      message.error(getMessage('saveFailed'));
+      message.error(getMessage("saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -85,7 +101,7 @@ const Options: React.FC = () => {
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <Title level={3} style={{ marginBottom: 8 }}>
-        {getMessage('optionsTitle')}
+        {getMessage("optionsTitle")}
       </Title>
       {/* <Paragraph type="secondary" style={{ marginTop: 0 }}>
         {getMessage('optionsDescription')}
@@ -94,20 +110,20 @@ const Options: React.FC = () => {
 
       <Form form={form} layout="vertical">
         <Title level={4} style={{ marginBottom: 16 }}>
-          {getMessage('languageSettings')}
+          {getMessage("languageSettings")}
         </Title>
-        
+
         <Form.Item
-          label={getMessage('selectLanguage')}
+          label={getMessage("selectLanguage")}
           style={{ marginBottom: 24 }}
         >
           <Select
             value={currentLanguage}
             onChange={handleLanguageChange}
             style={{ width: 200 }}
-            options={LANGUAGE_OPTIONS.map(option => ({
+            options={LANGUAGE_OPTIONS.map((option) => ({
               value: option.value,
-              label: option.label
+              label: option.label,
             }))}
           />
         </Form.Item>
@@ -115,11 +131,16 @@ const Options: React.FC = () => {
         <Divider />
         <Form.Item
           name="defaultBookmarksCollapsed"
-          label={getMessage('defaultBookmarksCollapsed')}
-          tooltip={getMessage('defaultBookmarksCollapsedTooltip')}
+          label={getMessage("defaultBookmarksCollapsed")}
+          tooltip={getMessage("defaultBookmarksCollapsedTooltip")}
           valuePropName="checked"
         >
-          <Switch onChange={(checked) => { form.setFieldValue("defaultBookmarksCollapsed", checked); handleSave(); }} />
+          <Switch
+            onChange={(checked) => {
+              form.setFieldValue("defaultBookmarksCollapsed", checked);
+              handleSave();
+            }}
+          />
         </Form.Item>
 
         {/* 暂时隐藏 Dify 相关设置（仅注释，不删除）
@@ -159,7 +180,7 @@ const Options: React.FC = () => {
 
         <Space>
           <Button type="primary" loading={saving} onClick={handleSave}>
-            {getMessage('saveSettings')}
+            {getMessage("saveSettings")}
           </Button>
           {/* 暂时隐藏 Dify 入口链接（仅注释，不删除）
           <Button
@@ -177,7 +198,7 @@ const Options: React.FC = () => {
 
 const App: React.FC = () => {
   const { language } = useLanguage();
-  const antdLocale = language === 'en' ? enUS : zhCN;
+  const antdLocale = language === "en" ? enUS : zhCN;
 
   return (
     <ConfigProvider locale={antdLocale}>
@@ -189,5 +210,5 @@ const App: React.FC = () => {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

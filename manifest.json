@@ -45,6 +45,13 @@
         "mac": "Command+Shift+K"
       },
       "description": "__MSG_quickSearchBookmarks__"
+    },
+    "quick_bookmark": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+D",
+        "mac": "Command+Shift+D"
+      },
+      "description": "__MSG_quickBookmarkPage__"
     }
   }
 }
