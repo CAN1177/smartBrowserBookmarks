@@ -87,20 +87,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         });
       return true; // 保持消息通道开放
 
-    case "getHistory":
-      // 获取浏览历史
-      chrome.history
-        .search({
-          text: request.query || "",
-          maxResults: request.limit || 100,
-        })
-        .then((history) => {
-          sendResponse({ success: true, data: history });
-        })
-        .catch((error) => {
-          sendResponse({ success: false, error: error.message });
-        });
-      return true;
+    // 移除 getHistory：为降低权限，已不再请求 'history' 权限
 
     case "getCurrentPageInfo":
       // 获取当前活动标签页信息
@@ -133,8 +120,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
             return;
           }
 
-          // 直接尝试与内容脚本通信
+          // 先按需注入内容脚本（依赖 activeTab+scripting，避免全站注入）
           try {
+            console.log("按需注入内容脚本, tab.id:", tab.id);
+            await chrome.scripting.executeScript({
+              target: { tabId: tab.id! },
+              files: ["src/content/index.ts"],
+            });
+
             console.log("向内容脚本发送消息, tab.id:", tab.id);
 
             // 使用Promise包装sendMessage以便处理超时

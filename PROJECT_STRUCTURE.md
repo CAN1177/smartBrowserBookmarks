@@ -64,35 +64,20 @@ smartBrowserBookmarks/
 
 ### 🔧 配置文件
 
-#### `manifest.json` - Chrome 扩展清单
+#### `manifest.json` - Chrome 扩展清单（精简权限）
 
 ```json
 {
-  "manifest_version": 3, // 使用Manifest V3
-  "name": "RecallPin", // 插件名称
-  "permissions": [
-    // 权限配置
-    "storage",
-    "bookmarks",
-    "history",
-    "activeTab",
-    "scripting"
-  ],
+  "manifest_version": 3,
+  "name": "RecallPin",
+  "permissions": ["storage", "bookmarks", "activeTab", "scripting"],
   "background": {
-    // 后台服务配置
     "service_worker": "src/background/index.ts"
   },
-  "content_scripts": [
-    {
-      // 内容脚本配置
-      "matches": ["<all_urls>"],
-      "js": ["src/content/index.ts"]
-    }
-  ],
   "action": {
-    // 浏览器工具栏按钮配置
     "default_popup": "src/popup/index.html"
-  }
+  },
+  "options_page": "src/options/index.html"
 }
 ```
 
@@ -117,11 +102,10 @@ smartBrowserBookmarks/
 
 **主要功能**:
 
-- 📡 **消息路由**: 处理来自 popup、content script 的消息
-- 🔍 **书签管理**: 获取、添加、删除 Chrome 书签
-- 📊 **历史记录**: 获取浏览历史
-- 🌐 **页面信息获取**: 与 content script 通信获取当前页面信息
-- ⚡ **基础关键词生成**: 当 content script 不可用时的备用方案
+- 📡 消息路由：处理来自 popup 的消息
+- 🔍 书签管理：获取、添加、移动 Chrome 书签
+- 🌐 页面信息获取：按需注入内容脚本获取当前页面信息（activeTab + scripting）
+- ⚡ 基础关键词生成：当内容脚本不可用时的备用方案
 
 **关键方法**:
 
