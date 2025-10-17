@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "__MSG_extensionDescription__",
   "default_locale": "zh_CN",
   "icons": {
-    "16": "assets/icons/icon16.svg",
-    "48": "assets/icons/icon48.svg",
-    "128": "assets/icons/icon128.svg"
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
   },
   "permissions": ["storage", "bookmarks", "activeTab", "scripting"],
   "background": {
@@ -19,9 +19,9 @@
     "default_popup": "src/popup/index.html",
     "default_title": "__MSG_extensionName__",
     "default_icon": {
-      "16": "assets/icons/icon16.svg",
-      "48": "assets/icons/icon48.svg",
-      "128": "assets/icons/icon128.svg"
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
     }
   },
   "options_page": "src/options/index.html",
