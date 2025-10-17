@@ -269,6 +269,9 @@ const App: React.FC = () => {
   };
 
   const parseBookmarkTitle = (title: string) => {
+    // 先去掉计数部分，例如 "标题 (5) #tag" -> "标题 #tag"
+    const titleWithoutCount = title.replace(/\s*\(\d+\)(?=\s+#|$)/, "");
+    
     // 解析标题中的关键词（支持多种格式）
     // 格式1: 标题 #关键词1, 关键词2
     // 格式2: 标题 #关键词1 #关键词2
@@ -276,7 +279,7 @@ const App: React.FC = () => {
     // 格式4: 标题中包含冒号分隔的描述性内容
 
     // 先尝试匹配 # 开头的关键词
-    const keywordMatch = title.match(/^(.+?)\s*#(.+)$/);
+    const keywordMatch = titleWithoutCount.match(/^(.+?)\s*#(.+)$/);
     if (keywordMatch) {
       const cleanTitle = keywordMatch[1].trim();
       const keywordString = keywordMatch[2];
@@ -291,7 +294,7 @@ const App: React.FC = () => {
     }
 
     // 检查是否有冒号分隔的描述性内容（如：yanyiwu/nodejieba: "结巴"中文分词的Node.js版本）
-    const colonMatch = title.match(/^(.+?):\s*(.+)$/);
+    const colonMatch = titleWithoutCount.match(/^(.+?):\s*(.+)$/);
     if (colonMatch) {
       const mainTitle = colonMatch[1].trim();
       const description = colonMatch[2].trim();
@@ -318,7 +321,7 @@ const App: React.FC = () => {
     }
 
     // 如果没有特殊格式，尝试从标题中提取有意义的词汇
-    const words = title.split(/[\s\-_\/]+/);
+    const words = titleWithoutCount.split(/[\s\-_\/]+/);
     const potentialKeywords = words.filter(
       (word) =>
         word.length > 2 &&
@@ -329,12 +332,12 @@ const App: React.FC = () => {
 
     if (potentialKeywords.length > 0) {
       return {
-        title,
+        title: titleWithoutCount,
         keywords: potentialKeywords.slice(0, 4), // 最多取4个潜在关键词
       };
     }
 
-    return { title, keywords: [] };
+    return { title: titleWithoutCount, keywords: [] };
   };
 
   const flattenBookmarkTree = (
@@ -1098,11 +1101,13 @@ export default App;
 
 // 访问计数解析/构建辅助，与主界面逻辑保持一致
 const getVisitCountFromTitle = (title: string): number => {
-  const m = title.match(/\((\d+)\)\s*$/);
+  // 匹配 (n) 格式，可能后面跟着标签或者行尾
+  const m = title.match(/\((\d+)\)(?:\s+#|$)/);
   return m ? parseInt(m[1], 10) : 0;
 };
 const stripVisitCount = (title: string): string => {
-  return title.replace(/\s*\(\d+\)\s*$/, "");
+  // 去掉 (n) 但保留后面的标签
+  return title.replace(/\s*\(\d+\)(?=\s+#|$)/, "");
 };
 const buildTitleWithCountAndTags = (
   baseTitle: string,

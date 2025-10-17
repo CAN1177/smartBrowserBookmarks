@@ -111,7 +111,8 @@ const SortableFolderCard: React.FC<{
 }) => {
   // 仅用于预览排序的本地计数解析，避免作用域问题
   const localGetVisitCount = (title: string): number => {
-    const m = title.match(/\((\d+)\)\s*$/);
+    // 匹配 (n) 格式，可能后面跟着标签或者行尾
+    const m = title.match(/\((\d+)\)(?:\s+#|$)/);
     return m ? parseInt(m[1], 10) : 0;
   };
   const {
@@ -318,8 +319,12 @@ const SortableFolderCard: React.FC<{
                         {searchQuery && highlightText
                           ? highlightText!(bookmark.title, searchQuery!)
                           : bookmark.title}
+                        {bookmark.visitCount && bookmark.visitCount > 0 && (
+                          <span className="text-gray-500 ml-1">
+                            ({bookmark.visitCount})
+                          </span>
+                        )}
                       </div>
-                      {/* 移除计数展示 */}
                     </div>
                     {bookmark.tags.length > 0 && (
                       <div className="flex gap-1 mt-1 flex-wrap">
@@ -402,16 +407,19 @@ const SortableBookmarkCard: React.FC<{
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleClick = () => {
-    onVisit(bookmark);
-    window.open(bookmark.url, "_blank");
+  const handleClick = async () => {
+    try {
+      await onVisit(bookmark);
+      window.open(bookmark.url, "_blank");
+    } catch (error) {
+      console.error("访问书签失败:", error);
+      window.open(bookmark.url, "_blank");
+    }
   };
 
-  // 统一渲染标题：去掉访问次数，只保留标题与标签（仅用于显示，不写回）
-  const baseTitle = bookmark.title.replace(/\s*\(\d+\)\s*$/, "");
-  const displayTitle = `${baseTitle}${
-    bookmark.tags && bookmark.tags.length ? ` #${bookmark.tags.slice(0, 5).join(", ")}` : ""
-  }`;
+  // 统一渲染标题：组合标题、计数和标签用于显示
+  const countStr = bookmark.visitCount && bookmark.visitCount > 0 ? ` (${bookmark.visitCount})` : "";
+  const displayTitle = `${bookmark.title}${countStr}`;
 
   // 只使用列表视图
   if (false) {
@@ -698,7 +706,10 @@ const MainPage: React.FC = () => {
   }, [selectedFolder, folderPath]);
 
   const parseBookmarkTitle = (title: string) => {
-    const keywordMatch = title.match(/^(.+?)\s*#(.+)$/);
+    // 先去掉计数部分，例如 "标题 (5) #tag" -> "标题 #tag"
+    const titleWithoutCount = title.replace(/\s*\(\d+\)(?=\s+#|$)/, "");
+    
+    const keywordMatch = titleWithoutCount.match(/^(.+?)\s*#(.+)$/);
     if (keywordMatch) {
       const cleanTitle = keywordMatch[1].trim();
       const keywords = keywordMatch[2]
@@ -707,16 +718,18 @@ const MainPage: React.FC = () => {
         .filter((k) => k);
       return { title: cleanTitle, keywords };
     }
-    return { title, keywords: [] };
+    return { title: titleWithoutCount, keywords: [] };
   };
 
   // 访问计数解析/构建辅助
   const getVisitCountFromTitle = (title: string): number => {
-    const m = title.match(/\((\d+)\)\s*$/);
+    // 匹配 (n) 格式，可能后面跟着标签或者行尾
+    const m = title.match(/\((\d+)\)(?:\s+#|$)/);
     return m ? parseInt(m[1], 10) : 0;
   };
   const stripVisitCount = (title: string): string => {
-    return title.replace(/\s*\(\d+\)\s*$/, "");
+    // 去掉 (n) 但保留后面的标签
+    return title.replace(/\s*\(\d+\)(?=\s+#|$)/, "");
   };
   const buildTitleWithCountAndTags = (
     baseTitle: string,
@@ -775,7 +788,7 @@ const MainPage: React.FC = () => {
                 category: child.title,
                 parentId: child.id,
                 dateAdded: grandChild.dateAdded,
-                visitCount: getVisitCountFromTitle(title),
+                visitCount: getVisitCountFromTitle(grandChild.title),
               });
             } else if (grandChild.children) {
               // 这是一个子文件夹，递归处理
@@ -799,7 +812,7 @@ const MainPage: React.FC = () => {
                     category: grandChild.title,
                     parentId: grandChild.id,
                     dateAdded: greatGrandChild.dateAdded,
-                    visitCount: getVisitCountFromTitle(title),
+                    visitCount: getVisitCountFromTitle(greatGrandChild.title),
                   });
                 } else if (greatGrandChild.children) {
                   // 递归处理更深层的文件夹
@@ -822,7 +835,7 @@ const MainPage: React.FC = () => {
                         category: greatGrandChild.title,
                         parentId: greatGrandChild.id,
                         dateAdded: deepChild.dateAdded,
-                        visitCount: getVisitCountFromTitle(title),
+                        visitCount: getVisitCountFromTitle(deepChild.title),
                       });
                     } else if (deepChild.children) {
                       // 对于更深层的嵌套，使用递归
